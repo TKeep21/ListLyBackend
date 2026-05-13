@@ -1,0 +1,23 @@
+# Gradle
+.gradle/
+.gradle-local/
+build/
+**/build/
+
+# IntelliJ IDEA
+.idea/
+*.iml
+out/
+
+# OS
+.DS_Store
+
+# Logs
+*.log
+
+# Kotlin/Java
+*.class
+
+# Local env
+local.properties
+.env
