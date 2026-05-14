@@ -3,39 +3,45 @@ services:
     image: mongo:7.0
     restart: always
     environment:
-      MONGO_INITDB_ROOT_USERNAME: listly_admin
-      MONGO_INITDB_ROOT_PASSWORD: secret123
-      MONGO_INITDB_DATABASE: listlydb
-    ports:
-      - "27017:27017"
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
+      MONGO_INITDB_DATABASE: ${MONGO_DATABASE}
     volumes:
       - mongo_data:/data/db
+    networks:
+      - listly_network
 
   meilisearch:
     image: getmeili/meilisearch:v1.12
     restart: always
     environment:
-      - MEILI_MASTER_KEY=masterKey
-      - MEILI_ENV=development
-    ports:
-      - "7700:7700"
+      MEILI_MASTER_KEY: ${MEILI_MASTER_KEY}
+      MEILI_ENV: production
     volumes:
       - meili_data:/meili_data
+    networks:
+      - listly_network
 
   app:
     build: .
     restart: on-failure
     environment:
-      - MONGO_URI=mongodb://listly_admin:secret123@mongo:27017/listlydb?authSource=admin
-      - MEILI_HOST=http://meilisearch:7700
-      - MEILI_API_KEY=masterKey
-      - MEILI_INDEX=media_items
+      MONGO_URI: mongodb://${MONGO_ROOT_USERNAME}:${MONGO_ROOT_PASSWORD}@mongo:27017/${MONGO_DATABASE}?authSource=admin
+      MEILI_HOST: http://meilisearch:7700
+      MEILI_API_KEY: ${MEILI_MASTER_KEY}
+      MEILI_INDEX: media_items
     depends_on:
       - mongo
       - meilisearch
     ports:
       - "8080:8080"
+    networks:
+      - listly_network
 
 volumes:
   mongo_data:
   meili_data:
+
+networks:
+  listly_network:
+    driver: bridge
