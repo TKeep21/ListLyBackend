@@ -3,7 +3,7 @@ package search.repository
 import com.example.config.MeiliSearchConfig
 import com.example.config.MeiliSearchSettings
 import com.example.search.dto.model.SearchDocument
-import com.example.search.exceptions.MeiliClientException
+import com.example.search.exceptions.SearchRequestFailedException
 import com.example.search.repository.MeiliMediaSearchRepository
 import com.sun.net.httpserver.HttpServer
 import java.net.InetSocketAddress
@@ -84,11 +84,11 @@ class MeiliMediaSearchRepositoryTest {
     }
 
     @Test
-    fun `searchIds throws MeiliClientException on non-2xx response`() {
+    fun `searchIds throws SearchRequestFailedException on non-2xx response`() {
         responseCode = 500
         responseBody = """{"message":"error"}"""
 
-        assertFailsWith<MeiliClientException> {
+        assertFailsWith<SearchRequestFailedException> {
             repository.searchIds("boom", 10, 0)
         }
     }

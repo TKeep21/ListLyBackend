@@ -5,6 +5,7 @@ import com.example.search.dto.model.SearchDocument
 import com.example.search.dto.request.SearchMediaRequest
 import com.example.search.dto.response.SearchMediaResponse
 import com.example.search.exceptions.MeiliClientException
+import com.example.search.exceptions.SearchRequestFailedException
 import kotlinx.serialization.json.Json
 import org.slf4j.LoggerFactory
 import java.net.URI
@@ -61,8 +62,9 @@ class MeiliMediaSearchRepository(
                 response.statusCode(),
                 response.body()
             )
-            throw MeiliClientException(
-                "MeiliSearch $action failed with status=${response.statusCode()}, body=${response.body()}"
+            throw SearchRequestFailedException(
+                statusCode = response.statusCode(),
+                responseBody = response.body()
             )
         }
 

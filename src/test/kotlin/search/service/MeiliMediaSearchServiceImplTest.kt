@@ -6,6 +6,7 @@ import com.example.media.model.MediaType
 import com.example.media.Catalog.dto.model.MediaStatus
 import com.example.search.exceptions.InvalidSearchRequestException
 import com.example.search.exceptions.MeiliClientException
+import com.example.search.exceptions.SearchRequestFailedException
 import com.example.search.exceptions.SearchUnavailableException
 import com.example.search.repository.SearchReadRepository
 import com.example.search.service.MeiliMediaSearchServiceImpl
@@ -61,6 +62,18 @@ class MeiliMediaSearchServiceImplTest {
         assertFailsWith<SearchUnavailableException> {
             service.search("matrix", limit = 10, offset = 0)
         }
+    }
+
+    @Test
+    fun `search returns empty list when index is missing`() {
+        every { repository.searchIds("matrix", 10, 0) } throws SearchRequestFailedException(
+            statusCode = 404,
+            responseBody = """{"code":"index_not_found"}"""
+        )
+
+        val result = service.search("matrix", limit = 10, offset = 0)
+
+        assertEquals(emptyList(), result)
     }
 
     @Test
