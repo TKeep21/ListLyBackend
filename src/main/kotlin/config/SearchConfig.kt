@@ -42,6 +42,71 @@ class MeiliSearchClient(
             false
         }
     }
+
+    fun ensureIndexExists() {
+        val indexUrl = "${settings.host}/indexes/${settings.index}"
+        val checkRequest = requestBuilder(indexUrl)
+            .GET()
+            .build()
+
+        val checkResponse = try {
+            http.send(checkRequest, HttpResponse.BodyHandlers.ofString())
+        } catch (e: Exception) {
+            log.warn("Failed to check Meili index existence: {}", settings.index, e)
+            return
+        }
+
+        if (checkResponse.statusCode() in 200..299) {
+            return
+        }
+
+        if (checkResponse.statusCode() != 404 || !checkResponse.body().contains("index_not_found", ignoreCase = true)) {
+            log.warn(
+                "Unexpected response while checking Meili index. index={}, status={}, body={}",
+                settings.index,
+                checkResponse.statusCode(),
+                checkResponse.body()
+            )
+            return
+        }
+
+        val payload = """{"uid":"${settings.index}","primaryKey":"id"}"""
+        val createRequest = requestBuilder("${settings.host}/indexes")
+            .POST(HttpRequest.BodyPublishers.ofString(payload))
+            .build()
+
+        val createResponse = try {
+            http.send(createRequest, HttpResponse.BodyHandlers.ofString())
+        } catch (e: Exception) {
+            log.warn("Failed to create Meili index: {}", settings.index, e)
+            return
+        }
+
+        if (createResponse.statusCode() !in 200..299) {
+            log.warn(
+                "Failed to create Meili index. index={}, status={}, body={}",
+                settings.index,
+                createResponse.statusCode(),
+                createResponse.body()
+            )
+            return
+        }
+
+        log.info("Meili index ensured. index={}", settings.index)
+    }
+
+    private fun requestBuilder(url: String): HttpRequest.Builder {
+        val builder = HttpRequest.newBuilder()
+            .uri(URI.create(url))
+            .timeout(Duration.ofSeconds(3))
+            .header("Content-Type", "application/json")
+
+        if (!settings.apiKey.isNullOrBlank()) {
+            builder.header("Authorization", "Bearer ${settings.apiKey}")
+        }
+
+        return builder
+    }
 }
 
 object MeiliSearchConfig {
@@ -73,6 +138,7 @@ object MeiliSearchConfig {
 
 fun Application.configureSearch() {
     MeiliSearchConfig.init(this)
+    MeiliSearchConfig.client.ensureIndexExists()
 
     if (MeiliSearchConfig.client.health()) {
         log.info("Meilisearch is reachable at ${MeiliSearchConfig.settings.host}, index=${MeiliSearchConfig.settings.index}")
