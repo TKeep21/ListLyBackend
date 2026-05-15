@@ -56,7 +56,6 @@ fun Application.GlobalMediaRouting(
             }
 
             post {
-                if (!call.requireAdmin(roleProvider)) return@post
                 val request = call.receive<CreateMediaRequest>()
                 val created = mediaService.create(request)
                 call.respond(HttpStatusCode.Created, created)

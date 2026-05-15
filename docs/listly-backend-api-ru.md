@@ -1,6 +1,6 @@
 # Listly Backend API (актуальная версия)
 
-Base URL (dev): `http://localhost:8080`
+Base URL (dev): `http://158.160.251.150:8080`
 
 ## Модель авторизации для UI
 
