@@ -14,10 +14,14 @@ services:
   meilisearch:
     image: getmeili/meilisearch:v1.12
     restart: always
-    environment:
-      MEILI_MASTER_KEY: ${MEILI_MASTER_KEY}
-      MEILI_ENV: production
-      MEILI_DB_PATH: /meili_data
+    command:
+      - meilisearch
+      - --env
+      - production
+      - --master-key
+      - ${MEILI_MASTER_KEY}
+      - --db-path
+      - /meili_data
     volumes:
       - meili_data:/meili_data
     networks:
