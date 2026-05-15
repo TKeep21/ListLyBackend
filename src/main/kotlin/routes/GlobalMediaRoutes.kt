@@ -27,6 +27,7 @@ fun Application.GlobalMediaRouting(
     mediaService: MediaCatalogService,
     roleProvider: RoleProvider = JwtRoleProvider()
 ) {
+
     fun Route.registerCatalogEndpoints() {
         get("/{mediaId}") {
             val mediaId = call.parameters["mediaId"] ?: return@get call.respond(HttpStatusCode.BadRequest)
@@ -34,6 +35,12 @@ fun Application.GlobalMediaRouting(
             call.respond(item)
         }
 
+
+        post {
+            val request = call.receive<CreateMediaRequest>()
+            val created = mediaService.create(request)
+            call.respond(HttpStatusCode.Created, created)
+        }
         get("/items/{title}") {
             val title = call.parameters["title"] ?: return@get call.respond(HttpStatusCode.BadRequest)
             val items = mediaService.findAllByTitle(title)
@@ -55,11 +62,7 @@ fun Application.GlobalMediaRouting(
                 call.respond(HttpStatusCode.OK)
             }
 
-            post {
-                val request = call.receive<CreateMediaRequest>()
-                val created = mediaService.create(request)
-                call.respond(HttpStatusCode.Created, created)
-            }
+
 
             delete("/{mediaId}") {
                 if (!call.requireAdmin(roleProvider)) return@delete
