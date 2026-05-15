@@ -3,7 +3,9 @@ package com.example.media
 import com.example.config.DatabaseConfig
 import com.example.media.dto.UpdateMediaRequest
 import com.example.media.model.MediaItem
+import com.mongodb.client.model.Filters
 import com.mongodb.client.model.Updates
+import org.bson.types.ObjectId
 import org.litote.kmongo.and
 import org.litote.kmongo.div
 import org.litote.kmongo.eq
@@ -43,7 +45,22 @@ class MediaCatalogRepository {
     }
 
     fun findById(mediaId: String): MediaItem? {
-        return collection.findOne(MediaItem::id eq mediaId)
+        val byId = collection.findOne(MediaItem::id eq mediaId)
+        if (byId != null) return byId
+
+        if (!ObjectId.isValid(mediaId)) return null
+
+        val objectId = ObjectId(mediaId)
+        val byObjectId = collection.findOne(Filters.eq("_id", objectId)) ?: return null
+
+        if (byObjectId.id != mediaId) {
+            collection.updateOne(
+                Filters.eq("_id", objectId),
+                Updates.set("id", mediaId)
+            )
+        }
+
+        return byObjectId
     }
 
     fun findByExternalRef(provider: String?, externalId: String?): MediaItem? {
