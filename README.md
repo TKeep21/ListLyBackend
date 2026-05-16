@@ -11,6 +11,7 @@ Backend для мобильного приложения **Listly**.
 ## Документация
 - API контракт для backend и Android: `docs/API_V1.md`
 - Процесс поддержки документации: `docs/DOCS_PROCESS.md`
+- UML/архитектура/use-cases: `docs/UML_ARCHITECTURE_USECASES.md`
 
 ## Быстрый старт (локально)
 
