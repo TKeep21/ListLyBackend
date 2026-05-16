@@ -166,6 +166,47 @@ class GlobalMediaRoutesTest {
     }
 
     @Test
+    fun `POST create returns 403 for non-admin`() = testApplication {
+        val service = mockk<MediaCatalogService>(relaxed = true)
+
+        application {
+            configureSerialization()
+            configureStatusPages()
+            installTestAuth("USER")
+            GlobalMediaRouting(service, TestRoleProvider())
+        }
+
+        val response = client.post("/mediaCatalog") {
+            header(HttpHeaders.Authorization, "Bearer token")
+            contentType(ContentType.Application.Json)
+            setBody("""{"title":"Interstellar","mediaType":"MOVIE","mediaStatus":"FINISHED"}""")
+        }
+
+        assertEquals(HttpStatusCode.Forbidden, response.status)
+        verify(exactly = 0) { service.create(any()) }
+    }
+
+    @Test
+    fun `POST create returns 401 without token`() = testApplication {
+        val service = mockk<MediaCatalogService>(relaxed = true)
+
+        application {
+            configureSerialization()
+            configureStatusPages()
+            installTestAuth("ADMIN")
+            GlobalMediaRouting(service, TestRoleProvider())
+        }
+
+        val response = client.post("/mediaCatalog") {
+            contentType(ContentType.Application.Json)
+            setBody("""{"title":"Interstellar","mediaType":"MOVIE","mediaStatus":"FINISHED"}""")
+        }
+
+        assertEquals(HttpStatusCode.Unauthorized, response.status)
+        verify(exactly = 0) { service.create(any()) }
+    }
+
+    @Test
     fun `POST create returns 400 for malformed json and service not called`() = testApplication {
         val service = mockk<MediaCatalogService>(relaxed = true)
 

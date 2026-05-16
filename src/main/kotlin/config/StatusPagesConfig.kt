@@ -122,10 +122,18 @@ fun Application.configureStatusPages() {
         }
         
         
-        exception<SearchUnavailableException> { call, _ -> call.respond(HttpStatusCode.ServiceUnavailable, "Search Service unavailable") }
+        exception<SearchUnavailableException> { call, cause ->
+            call.respond(
+                HttpStatusCode.ServiceUnavailable,
+                mapOf("error" to (cause.message ?: "Search Service unavailable"))
+            )
+        }
 
         exception<SearchRequestFailedException> { call, cause ->
-            call.respond(HttpStatusCode.BadGateway, cause.message ?: "Search failed")
+            call.respond(
+                HttpStatusCode.BadGateway,
+                mapOf("error" to (cause.message ?: "Search failed"))
+            )
         }
 
         exception<InvalidSearchRequestException> { call, cause ->

@@ -21,12 +21,12 @@ import io.ktor.server.routing.patch
 import io.ktor.server.routing.post
 import io.ktor.server.routing.route
 import io.ktor.server.routing.routing
-import org.litote.kmongo.limit
 
 fun Application.GlobalMediaRouting(
     mediaService: MediaCatalogService,
     roleProvider: RoleProvider = JwtRoleProvider()
 ) {
+
     fun Route.registerCatalogEndpoints() {
         get("/{mediaId}") {
             val mediaId = call.parameters["mediaId"] ?: return@get call.respond(HttpStatusCode.BadRequest)
@@ -41,6 +41,13 @@ fun Application.GlobalMediaRouting(
         }
 
         authenticate("auth-jwt") {
+            post {
+                if (!call.requireAdmin(roleProvider)) return@post
+                val request = call.receive<CreateMediaRequest>()
+                val created = mediaService.create(request)
+                call.respond(HttpStatusCode.Created, created)
+            }
+
             patch("/admin/{mediaId}") {
                 if (!call.requireAdmin(roleProvider)) return@patch
                 val mediaId = call.parameters["mediaId"] ?: return@patch call.respond(HttpStatusCode.BadRequest)
@@ -55,12 +62,7 @@ fun Application.GlobalMediaRouting(
                 call.respond(HttpStatusCode.OK)
             }
 
-            post {
-                if (!call.requireAdmin(roleProvider)) return@post
-                val request = call.receive<CreateMediaRequest>()
-                val created = mediaService.create(request)
-                call.respond(HttpStatusCode.Created, created)
-            }
+
 
             delete("/{mediaId}") {
                 if (!call.requireAdmin(roleProvider)) return@delete

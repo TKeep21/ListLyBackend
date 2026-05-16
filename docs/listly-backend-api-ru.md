@@ -1,6 +1,6 @@
 # Listly Backend API (актуальная версия)
 
-Base URL (dev): `http://localhost:8080`
+Base URL (dev): `http://158.160.251.150:8080`
 
 ## Модель авторизации для UI
 
@@ -116,11 +116,6 @@ JWT содержит:
   "mediaStatus": "FINISHED",
   "genres": ["Sci-Fi", "Drama"],
   "posterUrl": "https://...",
-  "externalRef": {
-    "provider": "imdb",
-    "id": "tt0816692",
-    "url": "https://www.imdb.com/title/tt0816692/"
-  },
   "userRatingSum": 18.0,
   "userRatingCount": 2,
   "createdAt": 1737912345000,
@@ -182,12 +177,7 @@ Alias: `POST /mediaCatalog`
   "mediaType": "MOVIE",
   "mediaStatus": "FINISHED",
   "genres": ["Sci-Fi", "Drama"],
-  "posterUrl": "https://...",
-  "externalRef": {
-    "provider": "imdb",
-    "id": "tt0816692",
-    "url": "https://www.imdb.com/title/tt0816692/"
-  }
+  "posterUrl": "https://..."
 }
 ```
 
@@ -199,7 +189,6 @@ Alias: `POST /mediaCatalog`
 
 - `400 Bad Request`
 - `403 Forbidden` — пользователь не является администратором
-- `409 Conflict`
 
 ---
 

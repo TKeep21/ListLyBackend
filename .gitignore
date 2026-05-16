@@ -21,3 +21,5 @@ out/
 # Local env
 local.properties
 .env
+# Local datasets
+input/*.csv

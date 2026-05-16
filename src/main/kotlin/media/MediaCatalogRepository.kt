@@ -3,9 +3,9 @@ package com.example.media
 import com.example.config.DatabaseConfig
 import com.example.media.dto.UpdateMediaRequest
 import com.example.media.model.MediaItem
+import com.mongodb.client.model.Filters
 import com.mongodb.client.model.Updates
-import org.litote.kmongo.and
-import org.litote.kmongo.div
+import org.bson.types.ObjectId
 import org.litote.kmongo.eq
 import org.litote.kmongo.findOne
 import org.litote.kmongo.`in`
@@ -43,16 +43,22 @@ class MediaCatalogRepository {
     }
 
     fun findById(mediaId: String): MediaItem? {
-        return collection.findOne(MediaItem::id eq mediaId)
-    }
+        val byId = collection.findOne(MediaItem::id eq mediaId)
+        if (byId != null) return byId
 
-    fun findByExternalRef(provider: String?, externalId: String?): MediaItem? {
-        return collection.findOne(
-            and(
-                MediaItem::externalRef / com.example.media.Catalog.dto.model.ExternalRef::provider eq provider,
-                MediaItem::externalRef / com.example.media.Catalog.dto.model.ExternalRef::id eq externalId
+        if (!ObjectId.isValid(mediaId)) return null
+
+        val objectId = ObjectId(mediaId)
+        val byObjectId = collection.findOne(Filters.eq("_id", objectId)) ?: return null
+
+        if (byObjectId.id != mediaId) {
+            collection.updateOne(
+                Filters.eq("_id", objectId),
+                Updates.set("id", mediaId)
             )
-        )
+        }
+
+        return byObjectId
     }
 
     fun update(
@@ -79,10 +85,6 @@ class MediaCatalogRepository {
 
         request.mediaStatus?.let {
             updates.add(Updates.set("mediaStatus", it))
-        }
-
-        request.externalRef?.let {
-            updates.add(Updates.set("externalRef", it))
         }
 
         if (updates.isEmpty()) return

@@ -93,11 +93,6 @@ Entity returned by API:
   "mediaStatus": "FINISHED",
   "genres": ["Sci-Fi", "Drama"],
   "posterUrl": "https://...",
-  "externalRef": {
-    "provider": "imdb",
-    "id": "tt0816692",
-    "url": "https://www.imdb.com/title/tt0816692/"
-  },
   "userRatingSum": 18.0,
   "userRatingCount": 2,
   "createdAt": 1737912345000,
@@ -134,12 +129,7 @@ Request:
   "mediaType": "MOVIE",
   "mediaStatus": "FINISHED",
   "genres": ["Sci-Fi", "Drama"],
-  "posterUrl": "https://...",
-  "externalRef": {
-    "provider": "imdb",
-    "id": "tt0816692",
-    "url": "https://www.imdb.com/title/tt0816692/"
-  }
+  "posterUrl": "https://..."
 }
 ```
 
@@ -149,7 +139,6 @@ Response:
 Errors:
 - `400 Bad Request`
 - `403 Forbidden` (not admin)
-- `409 Conflict`
 
 ### PATCH `/media/admin/{mediaId}` (ADMIN only)
 Alias: `PATCH /mediaCatalog/admin/{mediaId}`

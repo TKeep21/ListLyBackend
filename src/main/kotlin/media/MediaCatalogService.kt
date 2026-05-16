@@ -5,8 +5,6 @@ import com.example.media.dto.UpdateMediaRequest
 import com.example.media.model.MediaItem
 import com.example.search.exceptions.MeiliClientException
 import com.example.search.service.SearchIndexService
-import org.litote.kmongo.document
-import org.litote.kmongo.nor
 import org.slf4j.LoggerFactory
 
 class MediaCatalogService(
@@ -28,29 +26,13 @@ class MediaCatalogService(
     fun create(request: CreateMediaRequest): MediaItem {
         validateCreateRequest(request)
 
-        request.externalRef?.let { ext ->
-            val existing = mediaCatalogRepository.findByExternalRef(
-                provider = ext.provider.trim(),
-                externalId = ext.id.trim()
-            )
-
-
-            if (existing != null) {
-                throw MediaAlreadyExistsException(
-                    "Media with provider=${ext.provider} and externalId=${ext.id} already exists"
-                )
-            }
-        }
-
-
         val mediaItem = MediaItem(
             title = request.title.trim(),
             description = request.description?.trim()?.takeIf { it.isNotBlank() },
             mediaType = request.mediaType,
             mediaStatus = request.mediaStatus,
             genres = request.genres.map { it.trim() }.filter { it.isNotBlank() },
-            posterUrl = request.posterUrl?.trim()?.takeIf { it.isNotBlank() },
-            externalRef = request.externalRef
+            posterUrl = request.posterUrl?.trim()?.takeIf { it.isNotBlank() }
         )
 
 
@@ -121,30 +103,12 @@ class MediaCatalogService(
         if (request.title.isBlank()) {
             throw InvalidMediaRequestException("Title must not be blank")
         }
-
-        request.externalRef?.let {
-            if (it.provider.isBlank()) {
-                throw InvalidMediaRequestException("External provider must not be blank")
-            }
-            if (it.id.isBlank()) {
-                throw InvalidMediaRequestException("External id must not be blank")
-            }
-        }
     }
 
     private fun validateUpdateRequest(request: UpdateMediaRequest) {
         request.title?.let {
             if (it.isBlank()) {
                 throw InvalidMediaRequestException("Title must not be blank")
-            }
-        }
-
-        request.externalRef?.let {
-            if (it.provider.isBlank()) {
-                throw InvalidMediaRequestException("External provider must not be blank")
-            }
-            if (it.id.isBlank()) {
-                throw InvalidMediaRequestException("External id must not be blank")
             }
         }
     }

@@ -1,9 +1,7 @@
 package media
 
-import com.example.media.Catalog.dto.model.ExternalRef
 import com.example.media.Catalog.dto.model.MediaStatus
 import com.example.media.InvalidMediaRequestException
-import com.example.media.MediaAlreadyExistsException
 import com.example.media.MediaCatalogRepository
 import com.example.media.MediaCatalogService
 import com.example.media.MediaNotFoundException
@@ -97,41 +95,6 @@ class MediaCatalogServiceTest {
     }
 
     @Test
-    fun `create should throw error if media already exists`() {
-        val request = CreateMediaRequest(
-            title = "TestGlobal",
-            mediaType = MediaType.MOVIE,
-            mediaStatus = MediaStatus.ANNOUNCED,
-            externalRef = ExternalRef(
-                provider = "imdb",
-                id = "tt0816692",
-                url = "https://www.imdb.com/title/tt0816692/"
-            )
-        )
-
-        every {
-            repository.findByExternalRef("imdb", "tt0816692")
-        } returns MediaItem(
-            id = "67",
-            title = "Interstellar",
-            mediaType = MediaType.MOVIE,
-            mediaStatus = MediaStatus.FINISHED,
-            externalRef = ExternalRef(
-                provider = "imdb",
-                id = "tt0816692",
-                url = "https://www.imdb.com/title/tt0816692/"
-            )
-        )
-
-        assertFailsWith<MediaAlreadyExistsException> {
-            service.create(request)
-        }
-
-        verify(exactly = 1) { repository.findByExternalRef("imdb", "tt0816692") }
-        verify(exactly = 0) { repository.save(any()) }
-    }
-
-    @Test
     fun `create should normalize fields before save`() {
         val request = CreateMediaRequest(
             title = "  Interstellar  ",
@@ -165,23 +128,6 @@ class MediaCatalogServiceTest {
             service.create(request)
         }
 
-        verify(exactly = 0) { repository.save(any()) }
-    }
-
-    @Test
-    fun `create should throw for blank external provider`() {
-        val request = CreateMediaRequest(
-            title = "Dark",
-            mediaType = MediaType.SERIES,
-            mediaStatus = MediaStatus.FINISHED,
-            externalRef = ExternalRef(provider = " ", id = "123", url = null)
-        )
-
-        assertFailsWith<InvalidMediaRequestException> {
-            service.create(request)
-        }
-
-        verify(exactly = 0) { repository.findByExternalRef(any(), any()) }
         verify(exactly = 0) { repository.save(any()) }
     }
 
