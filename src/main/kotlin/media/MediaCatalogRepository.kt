@@ -6,8 +6,6 @@ import com.example.media.model.MediaItem
 import com.mongodb.client.model.Filters
 import com.mongodb.client.model.Updates
 import org.bson.types.ObjectId
-import org.litote.kmongo.and
-import org.litote.kmongo.div
 import org.litote.kmongo.eq
 import org.litote.kmongo.findOne
 import org.litote.kmongo.`in`
@@ -63,15 +61,6 @@ class MediaCatalogRepository {
         return byObjectId
     }
 
-    fun findByExternalRef(provider: String?, externalId: String?): MediaItem? {
-        return collection.findOne(
-            and(
-                MediaItem::externalRef / com.example.media.Catalog.dto.model.ExternalRef::provider eq provider,
-                MediaItem::externalRef / com.example.media.Catalog.dto.model.ExternalRef::id eq externalId
-            )
-        )
-    }
-
     fun update(
         mediaId: String,
         request: UpdateMediaRequest
@@ -96,10 +85,6 @@ class MediaCatalogRepository {
 
         request.mediaStatus?.let {
             updates.add(Updates.set("mediaStatus", it))
-        }
-
-        request.externalRef?.let {
-            updates.add(Updates.set("externalRef", it))
         }
 
         if (updates.isEmpty()) return
