@@ -2,6 +2,7 @@ package com.example.config
 
 
 import com.example.routes.AuthRouting
+import com.example.routes.HealthRouting
 import com.example.routes.UserFolderRouting
 import com.example.routes.GlobalMediaRoutes
 import com.example.routes.GlobalMediaRouting
@@ -12,6 +13,7 @@ import io.ktor.server.application.Application
 import io.ktor.server.routing.Route
 
 fun Application.configureRouting(){
+    HealthRouting()
     AuthRouting()
     UserMediaRouting()
     UserFolderRouting()
