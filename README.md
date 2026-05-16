@@ -50,6 +50,26 @@ docker compose up --build
 ./gradlew build
 ```
 
+## Импорт датасета TMDB (Kaggle CSV)
+
+Файлы:
+- `input/movies_metadata.csv` — используется для импорта в `globalMediaItems`
+- `input/credits.csv` и `input/keywords.csv` — пока не используются (в текущей модели нет полей под cast/crew/keywords)
+
+Команда полного импорта:
+```bash
+./scripts/import-tmdb-movies-to-mongo.sh input/movies_metadata.csv
+```
+
+Что делает скрипт:
+1. `scripts/tmdb_movies_to_media_ndjson.py` маппит CSV в NDJSON `MediaItem` (`build/import/global_media_items.ndjson`)
+2. `scripts/import-media-ndjson-to-mongo.sh` заливает NDJSON в Mongo (`ListlyDB.globalMediaItems`) через upsert по полю `id`
+
+Быстрый тест на небольшой выборке:
+```bash
+python3 scripts/tmdb_movies_to_media_ndjson.py --input input/movies_metadata.csv --output build/import/sample_media.ndjson --limit 100
+```
+
 ## Как синхронизироваться с Android-клиентом
 1. Любое изменение API сначала/сразу фиксируйте в `docs/API_V1.md`.
 2. Backend и Android сверяют DTO/enum/error-коды только по этому файлу.
