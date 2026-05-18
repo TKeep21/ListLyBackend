@@ -29,6 +29,7 @@ JWT содержит:
 |---|---|---|
 | `GET /media/*` | да | да |
 | `GET /media/search` | да | да |
+| `GET /media/discover` | да | да |
 | `POST /media` | нет | да |
 | `PATCH /media/admin/{mediaId}` | нет | да |
 | `DELETE /media/{mediaId}` | нет | да |
@@ -238,6 +239,40 @@ Alias: `DELETE /mediaCatalog/{mediaId}`
 ---
 
 # 3. Поиск
+
+## GET `/media/discover`
+
+UI-endpoint для начального наполнения вкладки поиска (без поисковой строки).
+
+### Query параметры
+
+- `limit` — необязательный параметр, по умолчанию `12`, допустимые значения `1..50`
+- `offset` — необязательный параметр, по умолчанию `0`, должен быть `>= 0`
+
+### Пример
+
+```http
+GET /media/discover?limit=12&offset=0
+```
+
+### Response `200 OK`
+
+```json
+[
+  {
+    "...": "MediaItem"
+  }
+]
+```
+
+### Важное поведение для UI
+
+- Вызывайте endpoint один раз при открытии вкладки поиска, чтобы показать стартовый список.
+- Выдача идет постранично из БД (`skip/limit`), без `query`.
+
+### Ошибки
+
+- `400 Bad Request` — некорректный `limit` или `offset`
 
 ## GET `/media/search`
 

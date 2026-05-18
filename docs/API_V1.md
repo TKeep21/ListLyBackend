@@ -87,6 +87,26 @@ Response `200 OK` with one `MediaItem`.
 Errors:
 - `404 Not Found`
 
+### GET /media/discover
+Returns initial media list for Search tab without query text.
+
+Optional query params:
+- `limit` (default `12`, allowed `1..50`)
+- `offset` (default `0`, must be `>= 0`)
+
+Response `200 OK`:
+```json
+[
+  {
+    "id": "65ff...",
+    "title": "Interstellar"
+  }
+]
+```
+
+Errors:
+- `400 Bad Request` invalid `limit`/`offset`
+
 ### POST /media
 Auth required (JWT).
 

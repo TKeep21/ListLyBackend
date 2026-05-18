@@ -22,6 +22,7 @@ Authorization: Bearer eyJhbGciOi...
 |---|---|---|
 | `GET /media/*` | yes | yes |
 | `GET /media/search` | yes | yes |
+| `GET /media/discover` | yes | yes |
 | `POST /media` | no | yes |
 | `PATCH /media/admin/{mediaId}` | no | yes |
 | `DELETE /media/{mediaId}` | no | yes |
@@ -172,6 +173,28 @@ Errors:
 - `404 Not Found`
 
 ## 3) Search
+
+### GET `/media/discover`
+
+UI bootstrap endpoint for Search tab initial content (without query string).
+
+Query params:
+- `limit` (optional, default `12`, allowed `1..50`)
+- `offset` (optional, default `0`, must be `>= 0`)
+
+Example:
+
+`GET /media/discover?limit=12&offset=0`
+
+Response `200 OK`:
+- `MediaItem[]`
+
+Important behavior for UI:
+- Call this endpoint once when Search tab is opened to show initial media list.
+- Selection order is DB page order (`skip/limit`), no search query required.
+
+Errors:
+- `400 Bad Request` (invalid `limit`/`offset`)
 
 ### GET `/media/search`
 

@@ -15,7 +15,10 @@ import io.ktor.server.routing.routing
 import kotlin.text.orEmpty
 import kotlin.text.toIntOrNull
 
-fun Application.searchRoute(searchService: SearchService){
+fun Application.searchRoute(
+    searchService: SearchService,
+    mediaCatalogService: MediaCatalogService
+){
     routing {
         route("/media/search") {
             get {
@@ -28,6 +31,16 @@ fun Application.searchRoute(searchService: SearchService){
                 call.respond(HttpStatusCode.OK, result)
             }
         }
+
+        route("/media/discover") {
+            get {
+                val limit = call.request.queryParameters["limit"]?.toIntOrNull() ?: 12
+                val offset = call.request.queryParameters["offset"]?.toIntOrNull() ?: 0
+
+                val result = mediaCatalogService.findPage(limit = limit, offset = offset)
+                call.respond(HttpStatusCode.OK, result)
+            }
+        }
     }
 }
 
@@ -37,6 +50,6 @@ fun Application.searchRoutes(){
     val searchIndexService = SearchIndexServiceImpl(mediaCatalogRepo, searchRepo)
     val mediaCatalogService = MediaCatalogService(mediaCatalogRepo, searchIndexService)
     val service = MeiliMediaSearchServiceImpl(searchRepo,mediaCatalogService)
-    searchRoute(service)
+    searchRoute(service, mediaCatalogService)
 
 }

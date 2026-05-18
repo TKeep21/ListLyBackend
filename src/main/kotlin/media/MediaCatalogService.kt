@@ -3,6 +3,7 @@ package com.example.media
 import com.example.media.dto.CreateMediaRequest
 import com.example.media.dto.UpdateMediaRequest
 import com.example.media.model.MediaItem
+import com.example.search.exceptions.InvalidSearchRequestException
 import com.example.search.exceptions.MeiliClientException
 import com.example.search.service.SearchIndexService
 import org.slf4j.LoggerFactory
@@ -141,5 +142,15 @@ class MediaCatalogService(
 
         return items
 
+    }
+
+    fun findPage(limit: Int = 12, offset: Int = 0): List<MediaItem> {
+        if (limit !in 1..50) {
+            throw InvalidSearchRequestException("Limit must be between 1 and 50")
+        }
+        if (offset < 0) {
+            throw InvalidSearchRequestException("Offset must not be negative")
+        }
+        return mediaCatalogRepository.findPage(limit = limit, offset = offset)
     }
 }
