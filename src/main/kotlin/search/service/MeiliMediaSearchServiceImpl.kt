@@ -19,7 +19,7 @@ class MeiliMediaSearchServiceImpl(
         limit: Int,
         offset: Int
     ): List<MediaItem> {
-        val normalizedQuery = query.trim()
+        val normalizedQuery = normalizeQuery(query)
 
         if (normalizedQuery.isEmpty()) {
             return emptyList()
@@ -44,11 +44,31 @@ class MeiliMediaSearchServiceImpl(
             if (e.statusCode == 404 && e.responseBody.contains("index_not_found", ignoreCase = true)) {
                 log.info("Search index not found for query='{}'. Returning empty result.", safeQuery)
                 emptyList()
+            } else if (e.statusCode == 400) {
+                log.info(
+                    "Meili rejected search request. queryLength={}, responseBody={}",
+                    safeQuery.length,
+                    e.responseBody
+                )
+                throw InvalidSearchRequestException("Invalid search query")
             } else {
+                log.warn(
+                    "Meili search request failed. status={}, queryLength={}",
+                    e.statusCode,
+                    safeQuery.length,
+                    e
+                )
                 throw SearchUnavailableException("Search is unavailable", e)
             }
         } catch (e: MeiliClientException) {
             throw SearchUnavailableException("Search is unavailable", e)
         }
     }
+
+    private fun normalizeQuery(query: String): String =
+        query
+            .map { if (it.isISOControl()) ' ' else it }
+            .joinToString("")
+            .trim()
+            .replace(Regex("\\s+"), " ")
 }
