@@ -15,6 +15,7 @@ import io.mockk.just
 import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
+import io.mockk.verifyOrder
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -54,6 +55,49 @@ class UserFolderServiceTest {
         assertFailsWith<UserFolderAlreadyExistsException> {
             service.create("u1", CreateUserFolderRequest("my folder"))
         }
+    }
+
+    @Test
+    fun `get all creates missing default folders`() {
+        val userId = "u1"
+        val folderSlot = mutableListOf<UserFolder>()
+        val existing = listOf(UserFolder(id = "f1", userId = userId, name = "watched"))
+        val resultFolders = existing + listOf(
+            UserFolder(id = "f2", userId = userId, name = "watching"),
+            UserFolder(id = "f3", userId = userId, name = "planned"),
+            UserFolder(id = "f4", userId = userId, name = "dropped")
+        )
+        every { folderRepository.findAllByUserId(userId) } returns existing andThen resultFolders
+        every { folderRepository.save(capture(folderSlot)) } just Runs
+
+        val result = service.getAllByUserId(userId)
+
+        assertEquals(resultFolders, result)
+        assertEquals(listOf("watching", "planned", "dropped"), folderSlot.map { it.name })
+        verifyOrder {
+            folderRepository.findAllByUserId(userId)
+            folderRepository.save(any())
+            folderRepository.save(any())
+            folderRepository.save(any())
+            folderRepository.findAllByUserId(userId)
+        }
+    }
+
+    @Test
+    fun `get all does not duplicate default folders case insensitive`() {
+        val userId = "u1"
+        val folders = listOf(
+            UserFolder(id = "f1", userId = userId, name = "Watched"),
+            UserFolder(id = "f2", userId = userId, name = "Watching"),
+            UserFolder(id = "f3", userId = userId, name = "Planned"),
+            UserFolder(id = "f4", userId = userId, name = "Dropped")
+        )
+        every { folderRepository.findAllByUserId(userId) } returns folders
+
+        val result = service.getAllByUserId(userId)
+
+        assertEquals(folders, result)
+        verify(exactly = 0) { folderRepository.save(any()) }
     }
 
     @Test

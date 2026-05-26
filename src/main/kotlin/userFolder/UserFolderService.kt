@@ -13,6 +13,12 @@ class UserFolderService(
     private val userFolderRepository: UserFolderRepository,
     private val userMediaRepository: UserMediaRepository
 ) {
+    private val defaultFolderNames = listOf(
+        "watched",
+        "watching",
+        "planned",
+        "dropped"
+    )
 
     fun create(userId: String, request: CreateUserFolderRequest): UserFolder {
         val normalizedName = normalizeAndValidateName(request.name)
@@ -27,6 +33,7 @@ class UserFolderService(
     }
 
     fun getAllByUserId(userId: String): List<UserFolder> {
+        ensureDefaultFolders(userId)
         return userFolderRepository.findAllByUserId(userId)
     }
 
@@ -82,5 +89,22 @@ class UserFolderService(
         if (duplicateExists) {
             throw UserFolderAlreadyExistsException(name)
         }
+    }
+
+    private fun ensureDefaultFolders(userId: String) {
+        val existingNames = userFolderRepository.findAllByUserId(userId)
+            .map { it.name.lowercase() }
+            .toSet()
+
+        defaultFolderNames
+            .filterNot { it.lowercase() in existingNames }
+            .forEach { name ->
+                userFolderRepository.save(
+                    UserFolder(
+                        userId = userId,
+                        name = name
+                    )
+                )
+            }
     }
 }
