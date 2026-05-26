@@ -30,7 +30,7 @@ object DatabaseConfig {
     fun users() = database.getCollection<User>()
     fun userMediaItems() = database.getCollection<UserMediaItem>()
     fun userFolders() = database.getCollection<UserFolder>()
-    fun globalMediaItems() = database.getCollection<MediaItem>()
+    fun globalMediaItems() = database.getCollection<MediaItem>("globalMediaItems")
 
     fun close() = client.close()
 }
