@@ -9,6 +9,7 @@ LIMIT="${3:-0}"
 python3 scripts/tmdb_movies_to_media_ndjson.py \
   --input "$CSV_FILE" \
   --output "$OUTPUT_FILE" \
-  --limit "$LIMIT"
+  --limit "$LIMIT" \
+  --validate-poster-urls
 
 bash scripts/import-media-ndjson-to-mongo.sh "$OUTPUT_FILE"

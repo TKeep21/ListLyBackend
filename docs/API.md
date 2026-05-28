@@ -104,6 +104,8 @@ Enums:
 - `mediaType`: `MOVIE | BOOK | SERIES | ANIME | GAME`
 - `mediaStatus`: `FINISHED | ONGOING | ANNOUNCED`
 
+`posterUrl` is either an absolute HTTPS image URL or `null` when no valid poster is available.
+
 ### GET `/media/{mediaId}`
 Alias: `GET /mediaCatalog/{mediaId}`
 

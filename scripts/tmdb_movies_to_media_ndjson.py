@@ -6,10 +6,13 @@ import csv
 import json
 import sys
 import time
+import urllib.error
+import urllib.request
 from datetime import date
 from pathlib import Path
 
 POSTER_BASE_DEFAULT = "https://image.tmdb.org/t/p/w500"
+USER_AGENT = "ListLyBackend TMDB poster import/1.0"
 
 
 def parse_args() -> argparse.Namespace:
@@ -41,6 +44,17 @@ def parse_args() -> argparse.Namespace:
         "--poster-base",
         default=POSTER_BASE_DEFAULT,
         help="Base URL for poster_path",
+    )
+    parser.add_argument(
+        "--validate-poster-urls",
+        action="store_true",
+        help="Check generated poster URLs and write null when the image URL is not reachable",
+    )
+    parser.add_argument(
+        "--poster-check-timeout",
+        type=float,
+        default=5.0,
+        help="Timeout in seconds for each poster URL validation request",
     )
     return parser.parse_args()
 
@@ -126,7 +140,7 @@ def build_poster_url(poster_path: str, poster_base: str) -> str | None:
         return None
 
     path = poster_path.strip()
-    if not path:
+    if not path or path.lower() == "null":
         return None
 
     if path.startswith("http://") or path.startswith("https://"):
@@ -137,6 +151,31 @@ def build_poster_url(poster_path: str, poster_base: str) -> str | None:
 
     base = poster_base.rstrip("/")
     return base + path
+
+
+def check_poster_url_available(url: str, timeout: float) -> bool | None:
+    for method in ("HEAD", "GET"):
+        headers = {"User-Agent": USER_AGENT}
+        if method == "GET":
+            headers["Range"] = "bytes=0-0"
+
+        request = urllib.request.Request(url, method=method, headers=headers)
+
+        try:
+            with urllib.request.urlopen(request, timeout=timeout) as response:
+                return 200 <= response.status < 400
+        except urllib.error.HTTPError as error:
+            if method == "HEAD" and error.code == 405:
+                continue
+            return False
+        except (TimeoutError, urllib.error.URLError):
+            return None
+
+    return False
+
+
+def is_poster_url_available(url: str, timeout: float) -> bool:
+    return check_poster_url_available(url, timeout) is True
 
 
 def build_media_doc(row: dict[str, str], now_ms: int, poster_base: str) -> tuple[dict | None, str | None]:
@@ -191,6 +230,8 @@ def main() -> int:
     skipped_reason: dict[str, int] = {}
     seen_ids: set[str] = set()
     duplicate_ids = 0
+    invalid_poster_urls = 0
+    poster_url_check_errors = 0
 
     now_ms = int(time.time() * 1000)
 
@@ -217,6 +258,18 @@ def main() -> int:
                 duplicate_ids += 1
                 continue
 
+            poster_url = media.get("posterUrl")
+            if (
+                args.validate_poster_urls
+                and isinstance(poster_url, str)
+            ):
+                poster_available = check_poster_url_available(poster_url, args.poster_check_timeout)
+                if poster_available is False:
+                    media["posterUrl"] = None
+                    invalid_poster_urls += 1
+                elif poster_available is None:
+                    poster_url_check_errors += 1
+
             seen_ids.add(media_id)
             out_f.write(json.dumps(media, ensure_ascii=False) + "\n")
             mapped += 1
@@ -231,6 +284,8 @@ def main() -> int:
     print(f"mapped: {mapped}")
     print(f"skipped_adult: {skipped_adult}")
     print(f"duplicate_ids: {duplicate_ids}")
+    print(f"invalid_poster_urls: {invalid_poster_urls}")
+    print(f"poster_url_check_errors: {poster_url_check_errors}")
 
     if skipped_reason:
         print("skipped_by_reason:")

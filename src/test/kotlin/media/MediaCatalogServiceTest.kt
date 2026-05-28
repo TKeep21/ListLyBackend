@@ -117,6 +117,49 @@ class MediaCatalogServiceTest {
     }
 
     @Test
+    fun `create should build TMDB poster url from relative poster path`() {
+        val request = CreateMediaRequest(
+            title = "Interstellar",
+            mediaType = MediaType.MOVIE,
+            mediaStatus = MediaStatus.FINISHED,
+            posterUrl = "/abcDEF123.jpg"
+        )
+        val savedItemsSlot = slot<MediaItem>()
+        every { repository.save(capture(savedItemsSlot)) } returns Unit
+        every { repository.findById(any()) } returns null
+
+        service.create(request)
+
+        assertEquals("https://image.tmdb.org/t/p/w500/abcDEF123.jpg", savedItemsSlot.captured.posterUrl)
+    }
+
+    @Test
+    fun `create should save null poster url for blank or invalid poster path`() {
+        val request = CreateMediaRequest(
+            title = "Interstellar",
+            mediaType = MediaType.MOVIE,
+            mediaStatus = MediaStatus.FINISHED,
+            posterUrl = "poster-without-extension"
+        )
+        val savedItemsSlot = slot<MediaItem>()
+        every { repository.save(capture(savedItemsSlot)) } returns Unit
+        every { repository.findById(any()) } returns null
+
+        service.create(request)
+
+        assertNull(savedItemsSlot.captured.posterUrl)
+    }
+
+    @Test
+    fun `findById should normalize stored poster path before response`() {
+        every { repository.findById("m1") } returns mediaItem(id = "m1", posterUrl = "abcDEF123.jpg")
+
+        val result = service.findById("m1")
+
+        assertEquals("https://image.tmdb.org/t/p/w500/abcDEF123.jpg", result?.posterUrl)
+    }
+
+    @Test
     fun `create should throw for blank title`() {
         val request = CreateMediaRequest(
             title = "   ",
@@ -232,12 +275,14 @@ class MediaCatalogServiceTest {
         id: String = "id-1",
         title: String = "Title",
         mediaType: MediaType = MediaType.MOVIE,
-        mediaStatus: MediaStatus = MediaStatus.ANNOUNCED
+        mediaStatus: MediaStatus = MediaStatus.ANNOUNCED,
+        posterUrl: String? = null
     ): MediaItem = MediaItem(
         id = id,
         title = title,
         mediaType = mediaType,
-        mediaStatus = mediaStatus
+        mediaStatus = mediaStatus,
+        posterUrl = posterUrl
     )
 
 }

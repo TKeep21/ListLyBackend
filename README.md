@@ -63,12 +63,17 @@ docker compose up --build
 ```
 
 Что делает скрипт:
-1. `scripts/tmdb_movies_to_media_ndjson.py` маппит CSV в NDJSON `MediaItem` (`build/import/global_media_items.ndjson`)
+1. `scripts/tmdb_movies_to_media_ndjson.py` маппит CSV в NDJSON `MediaItem` (`build/import/global_media_items.ndjson`) и проверяет poster URL: если TMDB отвечает ошибкой, `posterUrl` записывается как `null`
 2. `scripts/import-media-ndjson-to-mongo.sh` заливает NDJSON в Mongo (`ListlyDB.globalMediaItems`) через upsert по полю `id`
 
 Быстрый тест на небольшой выборке:
 ```bash
 python3 scripts/tmdb_movies_to_media_ndjson.py --input input/movies_metadata.csv --output build/import/sample_media.ndjson --limit 100
+```
+
+С проверкой доступности постеров:
+```bash
+python3 scripts/tmdb_movies_to_media_ndjson.py --input input/movies_metadata.csv --output build/import/sample_media.ndjson --limit 100 --validate-poster-urls
 ```
 
 ## Как синхронизироваться с Android-клиентом

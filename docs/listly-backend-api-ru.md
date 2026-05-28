@@ -139,6 +139,8 @@ JWT содержит:
 - `ONGOING`
 - `ANNOUNCED`
 
+`posterUrl` — абсолютная HTTPS-ссылка на изображение или `null`, если валидного постера нет.
+
 ---
 
 ## GET `/media/{mediaId}`

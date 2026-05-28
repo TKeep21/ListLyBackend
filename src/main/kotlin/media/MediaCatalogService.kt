@@ -16,11 +16,12 @@ class MediaCatalogService(
     fun findAllByTitle(title: String): List<MediaItem> {
         require(title.isNotBlank()) { "title must not be blank" }
         return mediaCatalogRepository.findAllByTitle(title.trim())
+            .map(MediaItem::withNormalizedPosterUrl)
     }
 
     fun findById(mediaId: String): MediaItem? {
         require(mediaId.isNotBlank()) { "mediaId must not be blank" }
-        return mediaCatalogRepository.findById(mediaId)
+        return mediaCatalogRepository.findById(mediaId)?.withNormalizedPosterUrl()
     }
 
     fun create(request: CreateMediaRequest): MediaItem {
@@ -32,7 +33,7 @@ class MediaCatalogService(
             mediaType = request.mediaType,
             mediaStatus = request.mediaStatus,
             genres = request.genres.map { it.trim() }.filter { it.isNotBlank() },
-            posterUrl = request.posterUrl?.trim()?.takeIf { it.isNotBlank() }
+            posterUrl = PosterUrls.normalize(request.posterUrl)
         )
 
 
@@ -139,7 +140,7 @@ class MediaCatalogService(
         }
 
 
-        return items
+        return items.map(MediaItem::withNormalizedPosterUrl)
 
     }
 }

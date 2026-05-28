@@ -76,7 +76,7 @@ class MediaCatalogRepository {
         }
 
         request.posterUrl?.let {
-            updates.add(Updates.set("posterUrl", it.trim()))
+            updates.add(Updates.set("posterUrl", PosterUrls.normalize(it)))
         }
 
         request.genres?.let {
