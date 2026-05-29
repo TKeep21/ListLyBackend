@@ -52,24 +52,34 @@ docker compose up --build
 ./gradlew build
 ```
 
-## Импорт датасета TMDB (Kaggle CSV)
+## Импорт датасетов (Kaggle CSV)
 
-Файлы:
+Файлы для фильмов:
 - `input/movies_metadata.csv` — используется для импорта в `globalMediaItems`
 - `input/credits.csv` и `input/keywords.csv` — пока не используются (в текущей модели нет полей под cast/crew/keywords)
 
-Команда полного импорта:
+Файлы для новых датасетов:
+- `input/anilist_anime_data_complete.csv` — аниме из AniList, импортируется как `ANIME`
+- `input/TMDB_tv_dataset_v3.csv` — сериалы из TMDB, импортируется как `SERIES`
+
+Команды импорта:
 ```bash
 ./scripts/import-tmdb-movies-to-mongo.sh input/movies_metadata.csv
+./scripts/import-anilist-anime-to-mongo.sh input/anilist_anime_data_complete.csv
+./scripts/import-tmdb-series-to-mongo.sh input/TMDB_tv_dataset_v3.csv
 ```
 
 Что делает скрипт:
-1. `scripts/tmdb_movies_to_media_ndjson.py` маппит CSV в NDJSON `MediaItem` (`build/import/global_media_items.ndjson`)
+1. Python-скрипт маппит CSV в NDJSON `MediaItem`
 2. `scripts/import-media-ndjson-to-mongo.sh` заливает NDJSON в Mongo (`ListlyDB.globalMediaItems`) через upsert по полю `id`
+
+По умолчанию импорт аниме и сериалов берет топ-5000 по полю `popularity`. Если датасет меньше, импортируются все доступные строки. Лимит можно переопределить третьим аргументом shell-скрипта или `--limit` у Python-конвертера; `0` означает без лимита.
 
 Быстрый тест на небольшой выборке:
 ```bash
 python3 scripts/tmdb_movies_to_media_ndjson.py --input input/movies_metadata.csv --output build/import/sample_media.ndjson --limit 100
+python3 scripts/anilist_anime_to_media_ndjson.py --input input/anilist_anime_data_complete.csv --output build/import/sample_anime.ndjson --limit 100
+python3 scripts/tmdb_series_to_media_ndjson.py --input input/TMDB_tv_dataset_v3.csv --output build/import/sample_series.ndjson --limit 100
 ```
 
 ## Как синхронизироваться с Android-клиентом
