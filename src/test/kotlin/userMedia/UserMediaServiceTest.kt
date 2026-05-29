@@ -10,8 +10,10 @@ import com.example.UserMedia.dto.UpdateUserMediaRequest
 import com.example.UserMedia.exceptions.InvalidUserMediaRequestException
 import com.example.UserMedia.exceptions.UserMediaAlreadyExistsException
 import com.example.UserMedia.exceptions.UserMediaNotFoundException
+import com.example.UserMedia.model.SortDirection
 import com.example.UserMedia.model.UserCollectionStatus
 import com.example.UserMedia.model.UserMediaItem
+import com.example.UserMedia.model.UserMediaSortBy
 import com.example.media.Catalog.dto.model.MediaStatus
 import com.example.media.MediaCatalogService
 import com.example.media.model.MediaItem
@@ -372,4 +374,62 @@ class UserMediaServiceTest {
 
         verify(exactly = 1) { repository.findAllByUser("u", null, null, "folder-1") }
     }
+
+    @Test
+    fun `filter by media type uses linked media`() {
+        val movieItem = UserMediaItem(id = "um-1", userId = "u", mediaId = "movie-1")
+        val bookItem = UserMediaItem(id = "um-2", userId = "u", mediaId = "book-1")
+        every { repository.findAllByUser("u", null, null, null) } returns listOf(movieItem, bookItem)
+        every { mediaCatalogService.findByIds(listOf("movie-1", "book-1")) } returns listOf(
+            mediaItem(id = "movie-1", title = "Arrival", mediaType = MediaType.MOVIE),
+            mediaItem(id = "book-1", title = "Dune", mediaType = MediaType.BOOK)
+        )
+
+        val result = service.getAllMediaItemsByUserId("u", mediaType = MediaType.MOVIE)
+
+        assertEquals(listOf(movieItem), result)
+        verify(exactly = 1) { mediaCatalogService.findByIds(listOf("movie-1", "book-1")) }
+    }
+
+    @Test
+    fun `sort by title uses linked media title`() {
+        val zItem = UserMediaItem(id = "um-1", userId = "u", mediaId = "z-media")
+        val aItem = UserMediaItem(id = "um-2", userId = "u", mediaId = "a-media")
+        every { repository.findAllByUser("u", null, null, null) } returns listOf(zItem, aItem)
+        every { mediaCatalogService.findByIds(listOf("z-media", "a-media")) } returns listOf(
+            mediaItem(id = "z-media", title = "Zodiac", mediaType = MediaType.MOVIE),
+            mediaItem(id = "a-media", title = "Arrival", mediaType = MediaType.MOVIE)
+        )
+
+        val result = service.getAllMediaItemsByUserId(
+            userId = "u",
+            sortBy = UserMediaSortBy.TITLE,
+            sortDirection = SortDirection.ASC
+        )
+
+        assertEquals(listOf(aItem, zItem), result)
+    }
+
+    @Test
+    fun `sort by created date desc returns latest first`() {
+        val oldItem = UserMediaItem(id = "old", userId = "u", mediaId = "m1", createdAt = 1L)
+        val newItem = UserMediaItem(id = "new", userId = "u", mediaId = "m2", createdAt = 2L)
+        every { repository.findAllByUser("u", null, null, null) } returns listOf(oldItem, newItem)
+
+        val result = service.getAllMediaItemsByUserId("u")
+
+        assertEquals(listOf(newItem, oldItem), result)
+        verify(exactly = 0) { mediaCatalogService.findByIds(any()) }
+    }
+
+    private fun mediaItem(
+        id: String,
+        title: String,
+        mediaType: MediaType
+    ) = MediaItem(
+        id = id,
+        title = title,
+        mediaType = mediaType,
+        mediaStatus = MediaStatus.FINISHED
+    )
 }

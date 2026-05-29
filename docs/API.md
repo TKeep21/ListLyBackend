@@ -278,6 +278,16 @@ Optional query params:
 - `status` (`PLANNED|IN_PROGRESS|COMPLETED|DROPPED`)
 - `favourite` (`true|false`)
 - `folderId` (string)
+- `mediaType` (`MOVIE|BOOK|SERIES|ANIME|GAME`)
+- `sortBy` (`createdAt|title`)
+- `sortDirection` (`asc|desc`, default `desc`)
+
+Examples:
+
+```http
+GET /user-media?mediaType=MOVIE&folderId=folder1&sortBy=title&sortDirection=asc
+GET /user-media?sortBy=createdAt&sortDirection=desc
+```
 
 Response:
 - `200 OK` + `UserMediaResponse[]`

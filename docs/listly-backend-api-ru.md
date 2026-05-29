@@ -388,6 +388,16 @@ Alias: `GET /api/user-media`
 - `status` — `PLANNED | IN_PROGRESS | COMPLETED | DROPPED`
 - `favourite` — `true | false`
 - `folderId` — строка
+- `mediaType` — `MOVIE | BOOK | SERIES | ANIME | GAME`
+- `sortBy` — `createdAt | title`
+- `sortDirection` — `asc | desc` (по умолчанию `desc`)
+
+Примеры:
+
+```http
+GET /user-media?mediaType=MOVIE&folderId=folder1&sortBy=title&sortDirection=asc
+GET /user-media?sortBy=createdAt&sortDirection=desc
+```
 
 ### Response
 

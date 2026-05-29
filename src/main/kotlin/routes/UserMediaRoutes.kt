@@ -10,9 +10,12 @@ import com.example.UserMedia.dto.UpdateUserMediaFoldersRequest
 import com.example.UserMedia.dto.UpdateUserMediaRequest
 import com.example.UserMedia.dto.UpdateUserMediaStatusRequest
 import com.example.UserMedia.dto.toResponse
+import com.example.UserMedia.model.SortDirection
 import com.example.UserMedia.model.UserCollectionStatus
+import com.example.UserMedia.model.UserMediaSortBy
 import com.example.media.MediaCatalogRepository
 import com.example.media.MediaCatalogService
+import com.example.media.model.MediaType
 import com.example.search.repository.MeiliMediaSearchRepository
 import com.example.search.service.SearchIndexServiceImpl
 import com.example.security.JwtUserIdProvider
@@ -20,6 +23,7 @@ import com.example.security.UserIdProvider
 import com.example.security.requireUserId
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.Application
+import io.ktor.server.application.ApplicationCall
 import io.ktor.server.auth.authenticate
 import io.ktor.server.plugins.BadRequestException
 import io.ktor.server.request.receive
@@ -45,20 +49,16 @@ fun Application.UserMediaRouting(
 
                 get {
                     val userId = call.requireUserId(userIdProvider) ?: return@get
-                    val status = call.parameters["status"]?.let {
-                        parseCollectionStatus(it)
-                    }
-                    val favourite = call.parameters["favourite"]?.let {
-                        it.toBooleanStrictOrNull()
-                            ?: throw BadRequestException("favourite must be true or false")
-                    }
-                    val folderId = call.parameters["folderId"]
+                    val query = call.parseUserMediaQuery()
                     val items = userMediaService
                         .getAllMediaItemsByUserId(
                             userId = userId,
-                            status = status,
-                            favourite = favourite,
-                            folderId = folderId
+                            status = query.status,
+                            favourite = query.favourite,
+                            folderId = query.folderId,
+                            mediaType = query.mediaType,
+                            sortBy = query.sortBy,
+                            sortDirection = query.sortDirection
                         )
                         .map { it.toResponse() }
 
@@ -126,20 +126,16 @@ fun Application.UserMediaRouting(
             route("/api/user-media") {
                 get {
                     val userId = call.requireUserId(userIdProvider) ?: return@get
-                    val status = call.parameters["status"]?.let {
-                        parseCollectionStatus(it)
-                    }
-                    val favourite = call.parameters["favourite"]?.let {
-                        it.toBooleanStrictOrNull()
-                            ?: throw BadRequestException("favourite must be true or false")
-                    }
-                    val folderId = call.parameters["folderId"]
+                    val query = call.parseUserMediaQuery()
                     val items = userMediaService
                         .getAllMediaItemsByUserId(
                             userId = userId,
-                            status = status,
-                            favourite = favourite,
-                            folderId = folderId
+                            status = query.status,
+                            favourite = query.favourite,
+                            folderId = query.folderId,
+                            mediaType = query.mediaType,
+                            sortBy = query.sortBy,
+                            sortDirection = query.sortDirection
                         )
                         .map { it.toResponse() }
 
@@ -195,8 +191,57 @@ fun Application.UserMediaRouting() {
 
 private fun parseCollectionStatus(value: String): UserCollectionStatus {
     return try {
-        UserCollectionStatus.valueOf(value)
+        UserCollectionStatus.valueOf(value.trim().uppercase())
     } catch (_: IllegalArgumentException) {
         throw BadRequestException("Unknown status: $value")
+    }
+}
+
+private data class UserMediaQuery(
+    val status: UserCollectionStatus?,
+    val favourite: Boolean?,
+    val folderId: String?,
+    val mediaType: MediaType?,
+    val sortBy: UserMediaSortBy,
+    val sortDirection: SortDirection
+)
+
+private fun ApplicationCall.parseUserMediaQuery(): UserMediaQuery {
+    return UserMediaQuery(
+        status = parameters["status"]?.let { parseCollectionStatus(it) },
+        favourite = parameters["favourite"]?.let { parseBoolean("favourite", it) },
+        folderId = parameters["folderId"]?.trim()?.takeIf { it.isNotEmpty() },
+        mediaType = parameters["mediaType"]?.let { parseMediaType(it) },
+        sortBy = parameters["sortBy"]?.let { parseUserMediaSortBy(it) } ?: UserMediaSortBy.CREATED_AT,
+        sortDirection = parameters["sortDirection"]?.let { parseSortDirection(it) } ?: SortDirection.DESC
+    )
+}
+
+private fun parseBoolean(parameterName: String, value: String): Boolean {
+    return value.trim().lowercase().toBooleanStrictOrNull()
+        ?: throw BadRequestException("$parameterName must be true or false")
+}
+
+private fun parseMediaType(value: String): MediaType {
+    return try {
+        MediaType.valueOf(value.trim().uppercase())
+    } catch (_: IllegalArgumentException) {
+        throw BadRequestException("Unknown mediaType: $value")
+    }
+}
+
+private fun parseUserMediaSortBy(value: String): UserMediaSortBy {
+    return when (value.trim().lowercase()) {
+        "createdat", "created_at", "addedat", "added_at", "dateadded", "date_added" -> UserMediaSortBy.CREATED_AT
+        "title", "alphabet", "alphabetical", "name" -> UserMediaSortBy.TITLE
+        else -> throw BadRequestException("Unknown sortBy: $value")
+    }
+}
+
+private fun parseSortDirection(value: String): SortDirection {
+    return when (value.trim().lowercase()) {
+        "asc", "ascending" -> SortDirection.ASC
+        "desc", "descending" -> SortDirection.DESC
+        else -> throw BadRequestException("Unknown sortDirection: $value")
     }
 }
