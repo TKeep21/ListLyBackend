@@ -61,12 +61,14 @@ docker compose up --build
 Файлы для новых датасетов:
 - `input/anilist_anime_data_complete.csv` — аниме из AniList, импортируется как `ANIME`
 - `input/TMDB_tv_dataset_v3.csv` — сериалы из TMDB, импортируется как `SERIES`
+- `input/Ultimate_Games_Dataset.csv` — игры, импортируется как `GAME`
 
 Команды импорта:
 ```bash
 ./scripts/import-tmdb-movies-to-mongo.sh input/movies_metadata.csv
 ./scripts/import-anilist-anime-to-mongo.sh input/anilist_anime_data_complete.csv
 ./scripts/import-tmdb-series-to-mongo.sh input/TMDB_tv_dataset_v3.csv
+./scripts/import-ultimate-games-to-mongo.sh input/Ultimate_Games_Dataset.csv
 ```
 
 Что делает скрипт:
@@ -74,12 +76,14 @@ docker compose up --build
 2. `scripts/import-media-ndjson-to-mongo.sh` заливает NDJSON в Mongo (`ListlyDB.globalMediaItems`) через upsert по полю `id`
 
 По умолчанию импорт аниме и сериалов берет топ-5000 по полю `popularity`. Если датасет меньше, импортируются все доступные строки. Лимит можно переопределить третьим аргументом shell-скрипта или `--limit` у Python-конвертера; `0` означает без лимита.
+Для игр (`Ultimate_Games_Dataset.csv`) по умолчанию берется топ-2000 по полю `popularity_score`.
 
 Быстрый тест на небольшой выборке:
 ```bash
 python3 scripts/tmdb_movies_to_media_ndjson.py --input input/movies_metadata.csv --output build/import/sample_media.ndjson --limit 100
 python3 scripts/anilist_anime_to_media_ndjson.py --input input/anilist_anime_data_complete.csv --output build/import/sample_anime.ndjson --limit 100
 python3 scripts/tmdb_series_to_media_ndjson.py --input input/TMDB_tv_dataset_v3.csv --output build/import/sample_series.ndjson --limit 100
+python3 scripts/ultimate_games_to_media_ndjson.py --input input/Ultimate_Games_Dataset.csv --output build/import/sample_games.ndjson --limit 100
 ```
 
 ## Как синхронизироваться с Android-клиентом
