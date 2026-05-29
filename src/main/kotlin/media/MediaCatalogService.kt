@@ -23,6 +23,17 @@ class MediaCatalogService(
         return mediaCatalogRepository.findById(mediaId)
     }
 
+    fun discover(limit: Int = 12, offset: Int = 0): List<MediaItem> {
+        if (limit !in 1..50) {
+            throw InvalidMediaRequestException("Limit must be between 1 and 50")
+        }
+        if (offset < 0) {
+            throw InvalidMediaRequestException("Offset must not be negative")
+        }
+
+        return mediaCatalogRepository.findNewestPage(limit, offset)
+    }
+
     fun create(request: CreateMediaRequest): MediaItem {
         validateCreateRequest(request)
 

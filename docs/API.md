@@ -22,6 +22,7 @@ Authorization: Bearer eyJhbGciOi...
 |---|---|---|
 | `GET /media/*` | yes | yes |
 | `GET /media/search` | yes | yes |
+| `GET /media/discover` | yes | yes |
 | `POST /media` | no | yes |
 | `PATCH /media/admin/{mediaId}` | no | yes |
 | `DELETE /media/{mediaId}` | no | yes |
@@ -194,6 +195,27 @@ Important behavior for UI:
 Errors:
 - `400 Bad Request` (invalid `limit`/`offset`)
 - `503 Service Unavailable` (search backend unavailable)
+
+### GET `/media/discover`
+Alias: `GET /mediaCatalog/discover`
+
+Purpose:
+- Return the initial page for the Search tab when query is empty.
+- Items are sorted by `createdAt` descending (newest first).
+
+Query params:
+- `limit` (optional, default `12`, allowed `1..50`)
+- `offset` (optional, default `0`, must be `>= 0`)
+
+Example:
+
+`GET /media/discover?limit=12&offset=0`
+
+Response `200 OK`:
+- `MediaItem[]`
+
+Errors:
+- `400 Bad Request` (invalid `limit`/`offset`)
 
 ## 4) Admin reindex (search)
 
