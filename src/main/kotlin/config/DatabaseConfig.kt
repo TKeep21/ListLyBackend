@@ -30,10 +30,10 @@ object DatabaseConfig {
         database = client.getDatabase("ListlyDB")
     }
 
-    fun users() = database.getCollection<User>()
-    fun userMediaItems() = database.getCollection<UserMediaItem>()
-    fun userFolders() = database.getCollection<UserFolder>()
-    fun globalMediaItems() = database.getCollection<MediaItem>()
+    fun users() = database.getCollection<User>("users")
+    fun userMediaItems() = database.getCollection<UserMediaItem>("userMediaItems")
+    fun userFolders() = database.getCollection<UserFolder>("userFolders")
+    fun globalMediaItems() = database.getCollection<MediaItem>("globalMediaItems")
 
     fun ensureIndexes() {
         ensureIndex(
