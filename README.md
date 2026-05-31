@@ -34,7 +34,8 @@ export MEILI_INDEX='media_items'
 ./gradlew run
 ```
 
-Сервер: `http://localhost:8080`
+Сервер (локально): `http://localhost:8080`
+Сервер (VM): `http://158.160.251.150:8080`
 
 ## Полный запуск через Docker Compose
 ```bash
@@ -42,7 +43,7 @@ docker compose up --build
 ```
 
 Сервисы:
-- `app` -> `http://localhost:8080`
+- `app` -> `http://localhost:8080` (локально) / `http://158.160.251.150:8080` (VM)
 - `mongo` -> `localhost:27017`
 - `meilisearch` -> `http://localhost:7700`
 

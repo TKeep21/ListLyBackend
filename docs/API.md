@@ -1,6 +1,6 @@
 # Listly Backend API Contract (EN)
 
-Base URL (dev): `http://localhost:8080`
+Base URL (VM): `http://158.160.251.150:8080`
 
 ## Document Rules (Versioning + Localization)
 
