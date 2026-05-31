@@ -12,10 +12,8 @@ import com.example.UserMedia.exceptions.UserMediaAlreadyExistsException
 import com.example.UserMedia.exceptions.UserMediaNotFoundException
 import com.example.UserMedia.model.SortDirection
 import com.example.UserMedia.model.UserCollectionStatus
-import com.example.UserMedia.model.SortDirection
 import com.example.UserMedia.model.UserMediaSortBy
 import com.example.UserMedia.model.UserMediaItem
-import com.example.UserMedia.model.UserMediaSortBy
 import com.example.media.Catalog.dto.model.MediaStatus
 import com.example.media.MediaCatalogService
 import com.example.media.model.MediaItem
