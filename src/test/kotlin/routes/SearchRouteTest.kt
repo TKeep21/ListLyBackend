@@ -64,4 +64,36 @@ class SearchRouteTest {
 
         assertEquals(HttpStatusCode.BadRequest, response.status)
     }
+
+    @Test
+    fun `GET media search returns 400 for non-integer limit`() = testApplication {
+        val service = mockk<SearchService>(relaxed = true)
+
+        application {
+            configureSerialization()
+            configureStatusPages()
+            searchRoute(service)
+        }
+
+        val response = client.get("/media/search?query=dune&limit=abc")
+
+        assertEquals(HttpStatusCode.BadRequest, response.status)
+        verify(exactly = 0) { service.search(any(), any(), any()) }
+    }
+
+    @Test
+    fun `GET media search returns 400 for non-integer offset`() = testApplication {
+        val service = mockk<SearchService>(relaxed = true)
+
+        application {
+            configureSerialization()
+            configureStatusPages()
+            searchRoute(service)
+        }
+
+        val response = client.get("/media/search?query=dune&offset=abc")
+
+        assertEquals(HttpStatusCode.BadRequest, response.status)
+        verify(exactly = 0) { service.search(any(), any(), any()) }
+    }
 }

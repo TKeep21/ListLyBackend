@@ -230,6 +230,9 @@ Response:
 - `400 Bad Request` (невалидные `limit/offset` или `query`)
 - `503 Service Unavailable` (поиск недоступен)
 
+Дополнительно:
+- если `limit` или `offset` переданы в query как нечисловые значения (например, `limit=abc`), backend возвращает `400 Bad Request`
+
 ## 6. Админская переиндексация
 
 ### POST `/media/admin/reindex` (ADMIN)
