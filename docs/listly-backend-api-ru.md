@@ -308,6 +308,10 @@ Query-параметры:
 - `sortBy` (`createdAt|title` + синонимы)
 - `sortDirection` (`asc|desc`, default `desc`)
 
+UI-ремарка:
+- `Тип: Все` -> параметр `mediaType` не передается
+- `Папка: Все` -> параметр `folderId` не передается
+
 Примеры:
 ```http
 GET /user-media?mediaType=MOVIE&folderId=folder1&sortBy=title&sortDirection=asc
@@ -490,6 +494,8 @@ Response `200 OK`:
 
 Для коллекции:
 1. Основной экран: `GET /user-media` с фильтрами
+   - `Тип: Все` -> не отправлять `mediaType`
+   - `Папка: Все` -> не отправлять `folderId`
 2. Быстрые действия: `/status`, `/favourite`, `/folders`
 3. Карточка заметки/рейтинга: `PATCH /user-media/{id}`
 
