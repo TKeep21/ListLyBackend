@@ -1,57 +1,55 @@
-# Listly Backend API для мобильного UI (актуально)
+# Listly Backend API Contract (RU)
 
-Base URL (prod VM): `http://158.160.251.150:8080`
-Base URL (local dev): `http://localhost:8080`
+Base URL (dev): `http://localhost:8080`
 
-Этот документ описывает фактический API-контракт backend для мобильного клиента.
+## Правила Документа (Версии + Локализация)
 
-## 1. Авторизация и роли
+- Версия API-контракта в этом документе: `v1`.
+- Этот файл (`docs/listly-backend-api-ru.md`) и английская локализация (`docs/API.md`) должны описывать одинаковое поведение API.
+- Допустимые различия между файлами: только язык локализации.
+- Любое изменение API должно обновлять оба файла в одном коммите.
+- Политика ломающих изменений:
+1. Предпочтительны аддитивные изменения (новые endpoint'ы/поля) без удаления текущего поведения.
+2. Если ломающие изменения необходимы, создается контракт `v2` и клиенты мигрируют постепенно.
 
-Для защищенных endpoint'ов передавай JWT:
+## Модель Авторизации
+
+- Защищенные endpoint'ы требуют заголовок:
 
 ```http
 Authorization: Bearer <jwt>
 ```
 
-JWT содержит:
+- Claims JWT, используемые backend:
 - `userId`
 - `role` (`USER` или `ADMIN`)
 
-Модель доступа:
-- `USER` имеет доступ к своему `user-media` и своим `folders`
-- `ADMIN` дополнительно имеет доступ к изменению глобального каталога и `reindex`
+## Роли и Доступ
 
-## 2. Карта endpoint'ов для UI
-
-Публичные:
-- `POST /auth/register`
-- `POST /auth/login`
-- `GET /media/{mediaId}`
-- `GET /media/items/{title}`
-- `GET /media/search`
-- `GET /media/discover`
-- `GET /health`
-
-Защищенные (JWT):
-- `GET/POST/PATCH/DELETE /user-media...`
-- `GET/POST/PATCH/DELETE /folders...`
-
-Админские (JWT + роль `ADMIN`):
-- `POST /media`
-- `PATCH /media/admin/{mediaId}`
-- `DELETE /media/{mediaId}`
-- `POST /media/admin/reindex`
+| Раздел | USER | ADMIN |
+|---|---|---|
+| `GET /media/*` | да | да |
+| `GET /media/search` | да | да |
+| `POST /media` | нет | да |
+| `PATCH /media/admin/{mediaId}` | нет | да |
+| `DELETE /media/{mediaId}` | нет | да |
+| `POST /media/admin/reindex` | нет | да |
+| `/user-media*` | да (только свои данные) | да |
+| `/folders*` | да (только свои данные) | да |
 
 Alias-маршруты:
-- `/media` и `/mediaCatalog`
-- `/user-media` и `/api/user-media` (частично)
+- `/mediaCatalog` и `/media`
+- `/user-media` и `/api/user-media` (частичные alias)
 - `/folders` и `/api/folders`
 
-## 3. Auth
+## 1) Auth
 
 ### POST `/auth/register`
 
+Создание пользователя.
+
 Request:
+
 ```json
 {
   "login": "mike",
@@ -63,8 +61,8 @@ Response:
 - `201 Created` (пустое тело)
 
 Валидация:
-- `login`: длина `3..20`
-- `password`: длина `6..25`
+- длина login: `3..20`
+- длина password: `6..25`
 
 Ошибки:
 - `400 Bad Request`
@@ -73,6 +71,7 @@ Response:
 ### POST `/auth/login`
 
 Request:
+
 ```json
 {
   "login": "mike",
@@ -81,6 +80,7 @@ Request:
 ```
 
 Response `200 OK`:
+
 ```json
 {
   "token": "<jwt>"
@@ -91,9 +91,10 @@ Response `200 OK`:
 - `400 Bad Request`
 - `401 Unauthorized`
 
-## 4. Глобальный каталог
+## 2) Глобальный Каталог Медиа
 
-`MediaItem` в ответах:
+Сущность, которую возвращает API:
+
 ```json
 {
   "id": "664f...",
@@ -110,11 +111,9 @@ Response `200 OK`:
 }
 ```
 
-Enum `mediaType`:
-- `MOVIE | SERIES | ANIME | GAME`
-
-Enum `mediaStatus`:
-- `FINISHED | ONGOING | ANNOUNCED`
+Enum'ы:
+- `mediaType`: `MOVIE | SERIES | ANIME | GAME`
+- `mediaStatus`: `FINISHED | ONGOING | ANNOUNCED`
 
 ### GET `/media/{mediaId}`
 Alias: `GET /mediaCatalog/{mediaId}`
@@ -129,34 +128,11 @@ Alias: `GET /mediaCatalog/items/{title}`
 Response:
 - `200 OK` + `MediaItem[]`
 
-### GET `/media/discover`
-Alias: `GET /mediaCatalog/discover`
-
-Назначение:
-- стартовая выдача для вкладки поиска в мобильном UI
-
-Логика сортировки:
-- `createdAt DESC` (сначала самые новые)
-
-Query-параметры:
-- `limit` (optional, default `12`, допустимо `1..50`)
-- `offset` (optional, default `0`, `>= 0`)
-
-Пример:
-```http
-GET /media/discover?limit=12&offset=0
-```
-
-Response:
-- `200 OK` + `MediaItem[]`
-
-Ошибки:
-- `400 Bad Request` (невалидные параметры, включая нечисловые)
-
-### POST `/media` (ADMIN)
+### POST `/media` (только ADMIN)
 Alias: `POST /mediaCatalog`
 
 Request:
+
 ```json
 {
   "title": "Interstellar",
@@ -173,12 +149,13 @@ Response:
 
 Ошибки:
 - `400 Bad Request`
-- `403 Forbidden`
+- `403 Forbidden` (не админ)
 
-### PATCH `/media/admin/{mediaId}` (ADMIN)
+### PATCH `/media/admin/{mediaId}` (только ADMIN)
 Alias: `PATCH /mediaCatalog/admin/{mediaId}`
 
 Request (partial):
+
 ```json
 {
   "title": "Interstellar (2014)",
@@ -195,7 +172,7 @@ Response:
 - `403 Forbidden`
 - `404 Not Found`
 
-### DELETE `/media/{mediaId}` (ADMIN)
+### DELETE `/media/{mediaId}` (только ADMIN)
 Alias: `DELETE /mediaCatalog/{mediaId}`
 
 Response:
@@ -205,59 +182,52 @@ Response:
 - `403 Forbidden`
 - `404 Not Found`
 
-## 5. Поиск
+## 3) Поиск
 
 ### GET `/media/search`
 
 Query-параметры:
-- `query` (string)
-- `limit` (optional, default `12`, допустимо `1..50`)
-- `offset` (optional, default `0`, `>= 0`)
+- `query` (строка)
+- `limit` (необязательный, по умолчанию `12`, допустимо `1..50`)
+- `offset` (необязательный, по умолчанию `0`, должен быть `>= 0`)
 
 Пример:
-```http
-GET /media/search?query=interstellar&limit=12&offset=0
-```
 
-Response:
-- `200 OK` + `MediaItem[]`
+`GET /media/search?query=interstellar&limit=12&offset=0`
 
-Особенности для UI:
-- если `query` пустой, возвращается `[]` с `200 OK`
-- поиск идет через Meili, затем элементы догружаются из MongoDB
+Response `200 OK`:
+- `MediaItem[]`
+
+Поведение:
+- Пустой query возвращает `[]` с `200 OK`.
+- Поиск работает через Meilisearch, затем медиа догружается из БД по id.
 
 Ошибки:
-- `400 Bad Request` (невалидные `limit/offset` или `query`)
+- `400 Bad Request` (невалидные `limit`/`offset`)
 - `503 Service Unavailable` (поиск недоступен)
 
-Дополнительно:
-- если `limit` или `offset` переданы в query как нечисловые значения (например, `limit=abc`), backend возвращает `400 Bad Request`
+## 4) Admin Reindex (Search)
 
-## 6. Админская переиндексация
-
-### POST `/media/admin/reindex` (ADMIN)
+### POST `/media/admin/reindex` (только ADMIN)
 Alias: `POST /mediaCatalog/admin/reindex`
-
-Важно:
-- в текущей реализации endpoint синхронный и возвращает `200 OK`
-- `202 Accepted` и фоновые задания сейчас не используются
 
 Response:
 - `200 OK`
 
 Ошибки:
-- `403 Forbidden`
-- `503 Service Unavailable` (если проблема с поисковым сервисом)
+- `403 Forbidden` (не админ)
+- `503 Service Unavailable` (поиск недоступен)
 
-## 7. User Media
+## 5) Пользовательская Коллекция Медиа
 
-Требуется JWT.
+Требуется JWT (`auth-jwt`).
 
 Основные маршруты:
 - `/user-media`
-- alias для части операций: `/api/user-media`
+- Alias для выбранных действий: `/api/user-media`
 
-`UserMediaResponse`:
+Сущность:
+
 ```json
 {
   "id": "66aa...",
@@ -278,6 +248,7 @@ Enum `collectionStatus`:
 ### POST `/user-media`
 
 Request:
+
 ```json
 {
   "mediaId": "65ff...",
@@ -293,30 +264,20 @@ Response:
 - `201 Created`
 
 Ошибки:
-- `400 Bad Request` (невалидные поля)
-- `404 Not Found` (media не найден)
-- `409 Conflict` (уже есть в коллекции)
+- `400 Bad Request`
+- `404 Not Found` (media не найдено)
+- `409 Conflict` (уже существует)
 
 ### GET `/user-media`
 Alias: `GET /api/user-media`
 
-Query-параметры:
+Необязательные query-параметры:
 - `status` (`PLANNED|IN_PROGRESS|COMPLETED|DROPPED`)
 - `favourite` (`true|false`)
-- `folderId` (string)
+- `folderId` (строка)
 - `mediaType` (`MOVIE|SERIES|ANIME|GAME`)
-- `sortBy` (`createdAt|title` + синонимы)
-- `sortDirection` (`asc|desc`, default `desc`)
-
-UI-ремарка:
-- `Тип: Все` -> параметр `mediaType` не передается
-- `Папка: Все` -> параметр `folderId` не передается
-
-Примеры:
-```http
-GET /user-media?mediaType=MOVIE&folderId=folder1&sortBy=title&sortDirection=asc
-GET /user-media?sortBy=createdAt&sortDirection=desc
-```
+- `sortBy` (`added_date|title`)
+- `sortDir` (`asc|desc`)
 
 Response:
 - `200 OK` + `UserMediaResponse[]`
@@ -324,13 +285,14 @@ Response:
 ### GET `/user-media/{userMediaId}`
 
 Response:
-- `200 OK` + `UserMediaResponse`
+- `200 OK`
 - `404 Not Found`
 
 ### PATCH `/user-media/{userMediaId}`
-Обновление `userRating` и `note`.
+Обновление рейтинга/заметки.
 
 Request:
+
 ```json
 {
   "userRating": 9.0,
@@ -342,9 +304,10 @@ Response:
 - `200 OK`
 
 ### PATCH `/user-media/{userMediaId}/status`
-Alias: `/api/user-media/{userMediaId}/status`
+Alias: `PATCH /api/user-media/{userMediaId}/status`
 
 Request:
+
 ```json
 {
   "status": "COMPLETED"
@@ -355,9 +318,10 @@ Response:
 - `200 OK`
 
 ### PATCH `/user-media/{userMediaId}/favourite`
-Alias: `/api/user-media/{userMediaId}/favourite`
+Alias: `PATCH /api/user-media/{userMediaId}/favourite`
 
 Request:
+
 ```json
 {
   "isFavourite": true
@@ -368,9 +332,10 @@ Response:
 - `200 OK`
 
 ### PATCH `/user-media/{userMediaId}/folders`
-Alias: `/api/user-media/{userMediaId}/folders`
+Alias: `PATCH /api/user-media/{userMediaId}/folders`
 
 Request:
+
 ```json
 {
   "folderIds": ["folder1", "folder2"]
@@ -386,15 +351,16 @@ Response:
 - `200 OK`
 - `404 Not Found`
 
-## 8. User Folders
+## 6) Пользовательские Папки
 
-Требуется JWT.
+Требуется JWT (`auth-jwt`).
 
 Основные маршруты:
 - `/folders`
-- alias: `/api/folders`
+- Alias: `/api/folders`
 
-`UserFolderResponse`:
+Сущность:
+
 ```json
 {
   "id": "77bb...",
@@ -404,14 +370,11 @@ Response:
 }
 ```
 
-Важно для UI:
-- при первом `GET /folders` backend может автоматически создать дефолтные папки:
-`watched`, `watching`, `planned`, `dropped`
-
 ### POST `/folders`
-Alias: `/api/folders`
+Alias: `POST /api/folders`
 
 Request:
+
 ```json
 {
   "name": "Favorites"
@@ -422,15 +385,16 @@ Response:
 - `201 Created` + `UserFolderResponse`
 
 ### GET `/folders`
-Alias: `/api/folders`
+Alias: `GET /api/folders`
 
 Response:
 - `200 OK` + `UserFolderResponse[]`
 
 ### PATCH `/folders/{folderId}`
-Alias: `/api/folders/{folderId}`
+Alias: `PATCH /api/folders/{folderId}`
 
 Request:
+
 ```json
 {
   "name": "New Name"
@@ -441,64 +405,31 @@ Response:
 - `200 OK`
 
 ### DELETE `/folders/{folderId}`
-Alias: `/api/folders/{folderId}`
+Alias: `DELETE /api/folders/{folderId}`
 
 Response:
 - `200 OK`
 
-Типовые ошибки папок:
-- `400 Bad Request`
-- `403 Forbidden`
+Общие ошибки для папок:
+- `400 Bad Request` (невалидное имя)
+- `403 Forbidden` (папка не принадлежит пользователю)
 - `404 Not Found`
-- `409 Conflict`
+- `409 Conflict` (дубликат имени папки)
 
-## 9. Health
+## Формат Ошибок Ответа
 
-### GET `/health`
+Большинство доменных/валидационных ошибок:
 
-Response `200 OK`:
-```json
-{
-  "status": "UP",
-  "services": {
-    "api": "UP",
-    "search": "UP"
-  }
-}
-```
-
-`search` может быть `DOWN`, при этом endpoint все равно отдает `200`.
-
-## 10. Единый формат ошибок
-
-Большинство доменных и валидационных ошибок:
 ```json
 {
   "error": "Human readable message"
 }
 ```
 
-`500`:
+`500 Internal Server Error`:
+
 ```json
 {
   "error": "Internal server error"
 }
 ```
-
-## 11. Рекомендации для мобильного UI
-
-Для вкладки поиска:
-1. При пустом запросе вызывать `GET /media/discover?limit=12&offset=0`
-2. При непустом запросе вызывать `GET /media/search?query=...&limit=12&offset=0`
-3. Для догрузки использовать увеличение `offset`
-
-Для коллекции:
-1. Основной экран: `GET /user-media` с фильтрами
-   - `Тип: Все` -> не отправлять `mediaType`
-   - `Папка: Все` -> не отправлять `folderId`
-2. Быстрые действия: `/status`, `/favourite`, `/folders`
-3. Карточка заметки/рейтинга: `PATCH /user-media/{id}`
-
-Для папок:
-1. На старте профиля вызывать `GET /folders`
-2. Учитывать, что дефолтные папки могут появиться автоматически

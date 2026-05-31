@@ -12,6 +12,8 @@ import com.example.UserMedia.exceptions.UserMediaAlreadyExistsException
 import com.example.UserMedia.exceptions.UserMediaNotFoundException
 import com.example.UserMedia.model.SortDirection
 import com.example.UserMedia.model.UserCollectionStatus
+import com.example.UserMedia.model.SortDirection
+import com.example.UserMedia.model.UserMediaSortBy
 import com.example.UserMedia.model.UserMediaItem
 import com.example.UserMedia.model.UserMediaSortBy
 import com.example.media.Catalog.dto.model.MediaStatus
@@ -345,34 +347,91 @@ class UserMediaServiceTest {
     @Test
     fun `filter by status`() {
         every {
-            repository.findAllByUser("u", UserCollectionStatus.COMPLETED, null, null)
+            repository.findAllByUser(
+                "u",
+                UserCollectionStatus.COMPLETED,
+                null,
+                null,
+                UserMediaSortBy.ADDED_DATE,
+                SortDirection.DESC
+            )
         } returns emptyList()
 
         service.getAllMediaItemsByUserId("u", status = UserCollectionStatus.COMPLETED)
 
-        verify(exactly = 1) { repository.findAllByUser("u", UserCollectionStatus.COMPLETED, null, null) }
+        verify(exactly = 1) {
+            repository.findAllByUser(
+                "u",
+                UserCollectionStatus.COMPLETED,
+                null,
+                null,
+                UserMediaSortBy.ADDED_DATE,
+                SortDirection.DESC
+            )
+        }
     }
 
     @Test
     fun `filter by favourite`() {
         every {
-            repository.findAllByUser("u", null, true, null)
+            repository.findAllByUser("u", null, true, null, UserMediaSortBy.ADDED_DATE, SortDirection.DESC)
         } returns emptyList()
 
         service.getAllMediaItemsByUserId("u", favourite = true)
 
-        verify(exactly = 1) { repository.findAllByUser("u", null, true, null) }
+        verify(exactly = 1) {
+            repository.findAllByUser("u", null, true, null, UserMediaSortBy.ADDED_DATE, SortDirection.DESC)
+        }
     }
 
     @Test
     fun `filter by folderId`() {
         every {
-            repository.findAllByUser("u", null, null, "folder-1")
+            repository.findAllByUser("u", null, null, "folder-1", UserMediaSortBy.ADDED_DATE, SortDirection.DESC)
         } returns emptyList()
 
         service.getAllMediaItemsByUserId("u", folderId = "folder-1")
 
-        verify(exactly = 1) { repository.findAllByUser("u", null, null, "folder-1") }
+        verify(exactly = 1) {
+            repository.findAllByUser("u", null, null, "folder-1", UserMediaSortBy.ADDED_DATE, SortDirection.DESC)
+        }
+    }
+
+    @Test
+    fun `filter by mediaType`() {
+        val items = listOf(
+            UserMediaItem(userId = "u", mediaId = "m1"),
+            UserMediaItem(userId = "u", mediaId = "m2")
+        )
+        every {
+            repository.findAllByUser("u", null, null, null, UserMediaSortBy.ADDED_DATE, SortDirection.DESC)
+        } returns items
+        every { mediaCatalogService.findByIds(listOf("m1", "m2")) } returns listOf(
+            MediaItem(id = "m1", title = "A", mediaType = MediaType.MOVIE, mediaStatus = MediaStatus.FINISHED),
+            MediaItem(id = "m2", title = "B", mediaType = MediaType.SERIES, mediaStatus = MediaStatus.FINISHED)
+        )
+
+        val result = service.getAllMediaItemsByUserId("u", mediaType = MediaType.SERIES)
+
+        assertEquals(1, result.size)
+        assertEquals("m2", result.first().mediaId)
+    }
+
+    @Test
+    fun `sort by title asc`() {
+        val first = UserMediaItem(userId = "u", mediaId = "m1", createdAt = 2L)
+        val second = UserMediaItem(userId = "u", mediaId = "m2", createdAt = 1L)
+        every {
+            repository.findAllByUser("u", null, null, null, UserMediaSortBy.TITLE, SortDirection.ASC)
+        } returns listOf(first, second)
+        every { mediaCatalogService.findByIds(listOf("m1", "m2")) } returns listOf(
+            MediaItem(id = "m1", title = "Zulu", mediaType = MediaType.MOVIE, mediaStatus = MediaStatus.FINISHED),
+            MediaItem(id = "m2", title = "Alpha", mediaType = MediaType.SERIES, mediaStatus = MediaStatus.FINISHED)
+        )
+
+        val result = service.getAllMediaItemsByUserId("u", sortBy = UserMediaSortBy.TITLE, sortDirection = SortDirection.ASC)
+
+        assertEquals(listOf("m2", "m1"), result.map { it.mediaId })
     }
 
     @Test

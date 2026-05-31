@@ -1,29 +1,35 @@
-# Listly Backend API (Actual)
+# Listly Backend API Contract (EN)
 
-Base URL (prod VM): `http://158.160.251.150:8080`
-Base URL (local dev): `http://localhost:8080`
+Base URL (dev): `http://localhost:8080`
 
-## Auth model for UI
+## Document Rules (Versioning + Localization)
 
-- Most write/read user endpoints require `Authorization: Bearer <jwt>`.
-- JWT now contains:
-- `userId`
-- `role` (`USER` or `ADMIN`)
-- Admin-only endpoints return `403 Forbidden` when token role is not `ADMIN`.
+- API contract version in this document: `v1`.
+- This file (`docs/API.md`) and the Russian localization (`docs/listly-backend-api-ru.md`) must describe the same API behavior.
+- Allowed differences between the two files: localization language only.
+- Any API change must update both files in the same commit.
+- Breaking changes policy:
+1. Prefer additive changes (new endpoints/fields) without removing existing behavior.
+2. If breaking changes are required, create `v2` contract docs and migrate clients gradually.
 
-Example header:
+## Auth Model
+
+- Protected endpoints require header:
 
 ```http
-Authorization: Bearer eyJhbGciOi...
+Authorization: Bearer <jwt>
 ```
 
-## Roles and access
+- JWT claims used by backend:
+- `userId`
+- `role` (`USER` or `ADMIN`)
+
+## Roles and Access
 
 | Area | USER | ADMIN |
 |---|---|---|
 | `GET /media/*` | yes | yes |
 | `GET /media/search` | yes | yes |
-| `GET /media/discover` | yes | yes |
 | `POST /media` | no | yes |
 | `PATCH /media/admin/{mediaId}` | no | yes |
 | `DELETE /media/{mediaId}` | no | yes |
@@ -31,7 +37,10 @@ Authorization: Bearer eyJhbGciOi...
 | `/user-media*` | yes (own data) | yes |
 | `/folders*` | yes (own data) | yes |
 
-Note: there are route aliases for some areas (`/mediaCatalog` and `/media`, `/user-media` and `/api/user-media`, `/folders` and `/api/folders`).
+Route aliases:
+- `/mediaCatalog` and `/media`
+- `/user-media` and `/api/user-media` (partial aliases)
+- `/folders` and `/api/folders`
 
 ## 1) Auth
 
@@ -82,7 +91,7 @@ Errors:
 - `400 Bad Request`
 - `401 Unauthorized`
 
-## 2) Global media catalog
+## 2) Global Media Catalog
 
 Entity returned by API:
 
@@ -189,68 +198,33 @@ Example:
 Response `200 OK`:
 - `MediaItem[]`
 
-Important behavior for UI:
-- If `query` is blank, backend returns `[]` with `200`.
-- Search is backed by Meili, then media is loaded from DB by ids.
+Behavior:
+- Blank query returns `[]` with `200 OK`.
+- Search is backed by Meilisearch, then media is loaded from DB by ids.
 
 Errors:
 - `400 Bad Request` (invalid `limit`/`offset`)
-- `503 Service Unavailable` (search backend unavailable)
+- `503 Service Unavailable` (search unavailable)
 
-### GET `/media/discover`
-Alias: `GET /mediaCatalog/discover`
-
-Purpose:
-- Return the initial page for the Search tab when query is empty.
-- Items are sorted by `createdAt` descending (newest first).
-
-Query params:
-- `limit` (optional, default `12`, allowed `1..50`)
-- `offset` (optional, default `0`, must be `>= 0`)
-
-Example:
-
-`GET /media/discover?limit=12&offset=0`
-
-Response `200 OK`:
-- `MediaItem[]`
-
-Errors:
-- `400 Bad Request` (invalid `limit`/`offset`)
-
-## 4) Admin reindex (search)
+## 4) Admin Reindex (Search)
 
 ### POST `/media/admin/reindex` (ADMIN only)
 Alias: `POST /mediaCatalog/admin/reindex`
 
-Starts async reindex task (non-blocking HTTP request).
+Response:
+- `200 OK`
 
-Responses:
-- `202 Accepted`
-
-```json
-{
-  "message": "Reindex started"
-}
-```
-
-- `409 Conflict`
-
-```json
-{
-  "error": "Reindex is already running"
-}
-```
-
+Errors:
 - `403 Forbidden` (not admin)
+- `503 Service Unavailable` (search unavailable)
 
-## 5) User media collection
+## 5) User Media Collection
 
 Requires JWT (`auth-jwt`).
 
 Primary routes:
 - `/user-media`
-- Alias for some actions: `/api/user-media`
+- Alias for selected actions: `/api/user-media`
 
 Entity:
 
@@ -290,7 +264,7 @@ Response:
 - `201 Created`
 
 Errors:
-- `400 Bad Request` (e.g. invalid rating/note)
+- `400 Bad Request`
 - `404 Not Found` (media not found)
 - `409 Conflict` (already exists)
 
@@ -302,15 +276,8 @@ Optional query params:
 - `favourite` (`true|false`)
 - `folderId` (string)
 - `mediaType` (`MOVIE|SERIES|ANIME|GAME`)
-- `sortBy` (`createdAt|title`)
-- `sortDirection` (`asc|desc`, default `desc`)
-
-Examples:
-
-```http
-GET /user-media?mediaType=MOVIE&folderId=folder1&sortBy=title&sortDirection=asc
-GET /user-media?sortBy=createdAt&sortDirection=desc
-```
+- `sortBy` (`added_date|title`)
+- `sortDir` (`asc|desc`)
 
 Response:
 - `200 OK` + `UserMediaResponse[]`
@@ -337,7 +304,7 @@ Response:
 - `200 OK`
 
 ### PATCH `/user-media/{userMediaId}/status`
-Alias: `/api/user-media/{userMediaId}/status`
+Alias: `PATCH /api/user-media/{userMediaId}/status`
 
 Request:
 
@@ -351,7 +318,7 @@ Response:
 - `200 OK`
 
 ### PATCH `/user-media/{userMediaId}/favourite`
-Alias: `/api/user-media/{userMediaId}/favourite`
+Alias: `PATCH /api/user-media/{userMediaId}/favourite`
 
 Request:
 
@@ -365,7 +332,7 @@ Response:
 - `200 OK`
 
 ### PATCH `/user-media/{userMediaId}/folders`
-Alias: `/api/user-media/{userMediaId}/folders`
+Alias: `PATCH /api/user-media/{userMediaId}/folders`
 
 Request:
 
@@ -384,7 +351,7 @@ Response:
 - `200 OK`
 - `404 Not Found`
 
-## 6) User folders
+## 6) User Folders
 
 Requires JWT (`auth-jwt`).
 
@@ -404,7 +371,7 @@ Entity:
 ```
 
 ### POST `/folders`
-Alias: `/api/folders`
+Alias: `POST /api/folders`
 
 Request:
 
@@ -418,13 +385,13 @@ Response:
 - `201 Created` + `UserFolderResponse`
 
 ### GET `/folders`
-Alias: `/api/folders`
+Alias: `GET /api/folders`
 
 Response:
 - `200 OK` + `UserFolderResponse[]`
 
 ### PATCH `/folders/{folderId}`
-Alias: `/api/folders/{folderId}`
+Alias: `PATCH /api/folders/{folderId}`
 
 Request:
 
@@ -438,7 +405,7 @@ Response:
 - `200 OK`
 
 ### DELETE `/folders/{folderId}`
-Alias: `/api/folders/{folderId}`
+Alias: `DELETE /api/folders/{folderId}`
 
 Response:
 - `200 OK`
@@ -449,7 +416,7 @@ Common folder errors:
 - `404 Not Found`
 - `409 Conflict` (duplicate folder name)
 
-## Error response format
+## Error Response Format
 
 Most domain/validation errors:
 
@@ -459,9 +426,7 @@ Most domain/validation errors:
 }
 ```
 
-Notes:
-- Some search errors currently return plain string bodies (not JSON object).  
-- `500` returns:
+`500 Internal Server Error`:
 
 ```json
 {

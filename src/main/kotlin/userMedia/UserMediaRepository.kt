@@ -2,8 +2,11 @@ package com.example.UserMedia
 
 import com.example.UserMedia.dto.UpdateUserMediaRequest
 import com.example.UserMedia.model.UserCollectionStatus
+import com.example.UserMedia.model.SortDirection
+import com.example.UserMedia.model.UserMediaSortBy
 import com.example.UserMedia.model.UserMediaItem
 import com.example.config.DatabaseConfig
+import com.mongodb.client.model.Sorts
 import com.mongodb.client.model.Updates
 import org.litote.kmongo.and
 import org.litote.kmongo.contains
@@ -19,7 +22,9 @@ class UserMediaRepository {
         userId: String,
         status: UserCollectionStatus? = null,
         favourite: Boolean? = null,
-        folderId: String? = null
+        folderId: String? = null,
+        sortBy: UserMediaSortBy = UserMediaSortBy.ADDED_DATE,
+        sortDirection: SortDirection = SortDirection.DESC
     ): List<UserMediaItem> {
         val filters = mutableListOf<org.bson.conversions.Bson>()
         filters.add(UserMediaItem::userId eq userId)
@@ -36,7 +41,18 @@ class UserMediaRepository {
             filters.add(UserMediaItem::folderIds contains it)
         }
 
-        return collection.find(and(*filters.toTypedArray())).toList()
+        val sortField = when (sortBy) {
+            UserMediaSortBy.ADDED_DATE -> "createdAt"
+            UserMediaSortBy.TITLE -> "createdAt"
+        }
+        val sort = when (sortDirection) {
+            SortDirection.ASC -> Sorts.ascending(sortField)
+            SortDirection.DESC -> Sorts.descending(sortField)
+        }
+
+        return collection.find(and(*filters.toTypedArray()))
+            .sort(sort)
+            .toList()
     }
 
     fun findById(userId:String,userMediaId:String): UserMediaItem?{

@@ -11,12 +11,11 @@ import com.example.UserMedia.exceptions.UserMediaAlreadyExistsException
 import com.example.UserMedia.exceptions.UserMediaNotFoundException
 import com.example.UserMedia.model.SortDirection
 import com.example.UserMedia.model.UserCollectionStatus
-import com.example.UserMedia.model.UserMediaItem
 import com.example.UserMedia.model.UserMediaSortBy
+import com.example.UserMedia.model.UserMediaItem
 import com.example.media.MediaCatalogService
-import com.example.media.MediaNotFoundException
-import com.example.media.model.MediaItem
 import com.example.media.model.MediaType
+import com.example.media.MediaNotFoundException
 
 class UserMediaService(
     private val userMediaRepository: UserMediaRepository,
@@ -30,20 +29,41 @@ class UserMediaService(
         favourite: Boolean? = null,
         folderId: String? = null,
         mediaType: MediaType? = null,
-        sortBy: UserMediaSortBy = UserMediaSortBy.CREATED_AT,
+        sortBy: UserMediaSortBy = UserMediaSortBy.ADDED_DATE,
         sortDirection: SortDirection = SortDirection.DESC
     ): List<UserMediaItem> {
-        val items = userMediaRepository.findAllByUser(userId, status, favourite, folderId)
+        val items = userMediaRepository.findAllByUser(
+            userId = userId,
+            status = status,
+            favourite = favourite,
+            folderId = folderId,
+            sortBy = sortBy,
+            sortDirection = sortDirection
+        )
+
         if (items.isEmpty()) return emptyList()
 
-        val mediaById = loadMediaByIdIfNeeded(items, mediaType, sortBy)
-        val filteredItems = if (mediaType == null) {
-            items
-        } else {
-            items.filter { mediaById[it.mediaId]?.mediaType == mediaType }
+        if (mediaType == null && sortBy != UserMediaSortBy.TITLE) {
+            return items
         }
 
-        return filteredItems.sortedBy(sortBy, sortDirection, mediaById)
+        val mediaById = mediaCatalogService.findByIds(items.map { it.mediaId }).associateBy { it.id }
+
+        val filtered = if (mediaType != null) {
+            items.filter { mediaById[it.mediaId]?.mediaType == mediaType }
+        } else {
+            items
+        }
+
+        if (sortBy != UserMediaSortBy.TITLE) return filtered
+
+        val comparator = compareBy<UserMediaItem> { mediaById[it.mediaId]?.title?.lowercase() ?: "" }
+            .thenBy { it.createdAt }
+
+        return when (sortDirection) {
+            SortDirection.ASC -> filtered.sortedWith(comparator)
+            SortDirection.DESC -> filtered.sortedWith(comparator.reversed())
+        }
     }
 
     fun getById(userId: String, userMediaId: String): UserMediaItem {
@@ -188,37 +208,5 @@ class UserMediaService(
         val folderService = userFolderService
             ?: throw InvalidUserMediaRequestException("Folder support is not configured")
         folderService.validateFolderOwnership(userId, folderIds)
-    }
-
-    private fun loadMediaByIdIfNeeded(
-        items: List<UserMediaItem>,
-        mediaType: MediaType?,
-        sortBy: UserMediaSortBy
-    ): Map<String, MediaItem> {
-        if (mediaType == null && sortBy != UserMediaSortBy.TITLE) return emptyMap()
-
-        return mediaCatalogService
-            .findByIds(items.map { it.mediaId })
-            .associateBy { it.id }
-    }
-
-    private fun List<UserMediaItem>.sortedBy(
-        sortBy: UserMediaSortBy,
-        sortDirection: SortDirection,
-        mediaById: Map<String, MediaItem>
-    ): List<UserMediaItem> {
-        val sorted = when (sortBy) {
-            UserMediaSortBy.CREATED_AT -> sortedBy { it.createdAt }
-            UserMediaSortBy.TITLE -> sortedWith(
-                compareBy(String.CASE_INSENSITIVE_ORDER) { item ->
-                    mediaById[item.mediaId]?.title.orEmpty()
-                }
-            )
-        }
-
-        return when (sortDirection) {
-            SortDirection.ASC -> sorted
-            SortDirection.DESC -> sorted.reversed()
-        }
     }
 }
