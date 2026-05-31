@@ -436,7 +436,9 @@ class UserMediaServiceTest {
     fun `filter by media type uses linked media`() {
         val movieItem = UserMediaItem(id = "um-1", userId = "u", mediaId = "movie-1")
         val animeItem = UserMediaItem(id = "um-2", userId = "u", mediaId = "anime-1")
-        every { repository.findAllByUser("u", null, null, null) } returns listOf(movieItem, animeItem)
+        every {
+            repository.findAllByUser("u", null, null, null, UserMediaSortBy.CREATED_AT, SortDirection.DESC)
+        } returns listOf(movieItem, animeItem)
         every { mediaCatalogService.findByIds(listOf("movie-1", "anime-1")) } returns listOf(
             mediaItem(id = "movie-1", title = "Arrival", mediaType = MediaType.MOVIE),
             mediaItem(id = "anime-1", title = "Naruto", mediaType = MediaType.ANIME)
@@ -452,7 +454,9 @@ class UserMediaServiceTest {
     fun `sort by title uses linked media title`() {
         val zItem = UserMediaItem(id = "um-1", userId = "u", mediaId = "z-media")
         val aItem = UserMediaItem(id = "um-2", userId = "u", mediaId = "a-media")
-        every { repository.findAllByUser("u", null, null, null) } returns listOf(zItem, aItem)
+        every {
+            repository.findAllByUser("u", null, null, null, UserMediaSortBy.TITLE, SortDirection.ASC)
+        } returns listOf(zItem, aItem)
         every { mediaCatalogService.findByIds(listOf("z-media", "a-media")) } returns listOf(
             mediaItem(id = "z-media", title = "Zodiac", mediaType = MediaType.MOVIE),
             mediaItem(id = "a-media", title = "Arrival", mediaType = MediaType.MOVIE)
@@ -471,7 +475,9 @@ class UserMediaServiceTest {
     fun `sort by created date desc returns latest first`() {
         val oldItem = UserMediaItem(id = "old", userId = "u", mediaId = "m1", createdAt = 1L)
         val newItem = UserMediaItem(id = "new", userId = "u", mediaId = "m2", createdAt = 2L)
-        every { repository.findAllByUser("u", null, null, null) } returns listOf(oldItem, newItem)
+        every {
+            repository.findAllByUser("u", null, null, null, UserMediaSortBy.CREATED_AT, SortDirection.DESC)
+        } returns listOf(newItem, oldItem)
 
         val result = service.getAllMediaItemsByUserId("u")
 
