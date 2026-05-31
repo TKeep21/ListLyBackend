@@ -55,7 +55,7 @@ Entity `MediaItem` (global, shared by all users):
 ```
 
 Enums:
-- `type`: `MOVIE | BOOK | SERIES | ANIME | GAME`
+- `type`: `MOVIE | SERIES | ANIME | GAME`
 - `mediaStatus`: `FINISHED | ONGOING | PLANNED`
 
 ### GET /media

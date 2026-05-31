@@ -34,6 +34,18 @@ class MediaCatalogService(
         return mediaCatalogRepository.findNewestPage(limit, offset)
     }
 
+    fun searchByTitleContains(query: String, limit: Int = 12, offset: Int = 0): List<MediaItem> {
+        if (query.isBlank()) return emptyList()
+        if (limit !in 1..50) {
+            throw InvalidMediaRequestException("Limit must be between 1 and 50")
+        }
+        if (offset < 0) {
+            throw InvalidMediaRequestException("Offset must not be negative")
+        }
+
+        return mediaCatalogRepository.findByTitleContaining(query, limit, offset)
+    }
+
     fun create(request: CreateMediaRequest): MediaItem {
         validateCreateRequest(request)
 

@@ -37,8 +37,13 @@ class MeiliMediaSearchServiceImpl(
 
         return try {
             val ids = repository.searchIds(safeQuery,limit,offset)
+            if (ids.isEmpty()) {
+                return mediaCatalogService.searchByTitleContains(safeQuery, limit, offset)
+            }
             val items = mediaCatalogService.findByIds(ids)
-            if (items.isEmpty()) return emptyList()
+            if (items.isEmpty()) {
+                return mediaCatalogService.searchByTitleContains(safeQuery, limit, offset)
+            }
             items
         } catch (e: SearchRequestFailedException) {
             if (e.statusCode == 404 && e.responseBody.contains("index_not_found", ignoreCase = true)) {
@@ -58,10 +63,11 @@ class MeiliMediaSearchServiceImpl(
                     safeQuery.length,
                     e
                 )
-                throw SearchUnavailableException("Search is unavailable", e)
+                mediaCatalogService.searchByTitleContains(safeQuery, limit, offset)
             }
         } catch (e: MeiliClientException) {
-            throw SearchUnavailableException("Search is unavailable", e)
+            log.warn("Meili client error. Falling back to Mongo title search", e)
+            mediaCatalogService.searchByTitleContains(safeQuery, limit, offset)
         }
     }
 

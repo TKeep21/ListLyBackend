@@ -111,7 +111,7 @@ Response `200 OK`:
 ```
 
 Enum `mediaType`:
-- `MOVIE | BOOK | SERIES | ANIME | GAME`
+- `MOVIE | SERIES | ANIME | GAME`
 
 Enum `mediaStatus`:
 - `FINISHED | ONGOING | ANNOUNCED`
@@ -301,7 +301,7 @@ Query-параметры:
 - `status` (`PLANNED|IN_PROGRESS|COMPLETED|DROPPED`)
 - `favourite` (`true|false`)
 - `folderId` (string)
-- `mediaType` (`MOVIE|BOOK|SERIES|ANIME|GAME`)
+- `mediaType` (`MOVIE|SERIES|ANIME|GAME`)
 - `sortBy` (`createdAt|title` + синонимы)
 - `sortDirection` (`asc|desc`, default `desc`)
 

@@ -103,7 +103,7 @@ Entity returned by API:
 ```
 
 Enums:
-- `mediaType`: `MOVIE | BOOK | SERIES | ANIME | GAME`
+- `mediaType`: `MOVIE | SERIES | ANIME | GAME`
 - `mediaStatus`: `FINISHED | ONGOING | ANNOUNCED`
 
 ### GET `/media/{mediaId}`
@@ -301,7 +301,7 @@ Optional query params:
 - `status` (`PLANNED|IN_PROGRESS|COMPLETED|DROPPED`)
 - `favourite` (`true|false`)
 - `folderId` (string)
-- `mediaType` (`MOVIE|BOOK|SERIES|ANIME|GAME`)
+- `mediaType` (`MOVIE|SERIES|ANIME|GAME`)
 - `sortBy` (`createdAt|title`)
 - `sortDirection` (`asc|desc`, default `desc`)
 

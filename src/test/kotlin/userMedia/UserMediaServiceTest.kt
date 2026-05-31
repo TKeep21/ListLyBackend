@@ -378,17 +378,17 @@ class UserMediaServiceTest {
     @Test
     fun `filter by media type uses linked media`() {
         val movieItem = UserMediaItem(id = "um-1", userId = "u", mediaId = "movie-1")
-        val bookItem = UserMediaItem(id = "um-2", userId = "u", mediaId = "book-1")
-        every { repository.findAllByUser("u", null, null, null) } returns listOf(movieItem, bookItem)
-        every { mediaCatalogService.findByIds(listOf("movie-1", "book-1")) } returns listOf(
+        val animeItem = UserMediaItem(id = "um-2", userId = "u", mediaId = "anime-1")
+        every { repository.findAllByUser("u", null, null, null) } returns listOf(movieItem, animeItem)
+        every { mediaCatalogService.findByIds(listOf("movie-1", "anime-1")) } returns listOf(
             mediaItem(id = "movie-1", title = "Arrival", mediaType = MediaType.MOVIE),
-            mediaItem(id = "book-1", title = "Dune", mediaType = MediaType.BOOK)
+            mediaItem(id = "anime-1", title = "Naruto", mediaType = MediaType.ANIME)
         )
 
         val result = service.getAllMediaItemsByUserId("u", mediaType = MediaType.MOVIE)
 
         assertEquals(listOf(movieItem), result)
-        verify(exactly = 1) { mediaCatalogService.findByIds(listOf("movie-1", "book-1")) }
+        verify(exactly = 1) { mediaCatalogService.findByIds(listOf("movie-1", "anime-1")) }
     }
 
     @Test
