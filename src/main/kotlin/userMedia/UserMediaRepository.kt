@@ -23,7 +23,7 @@ class UserMediaRepository {
         status: UserCollectionStatus? = null,
         favourite: Boolean? = null,
         folderId: String? = null,
-        sortBy: UserMediaSortBy = UserMediaSortBy.ADDED_DATE,
+        sortBy: UserMediaSortBy = UserMediaSortBy.CREATED_AT,
         sortDirection: SortDirection = SortDirection.DESC
     ): List<UserMediaItem> {
         val filters = mutableListOf<org.bson.conversions.Bson>()
@@ -42,7 +42,7 @@ class UserMediaRepository {
         }
 
         val sortField = when (sortBy) {
-            UserMediaSortBy.ADDED_DATE -> "createdAt"
+            UserMediaSortBy.CREATED_AT -> "createdAt"
             UserMediaSortBy.TITLE -> "createdAt"
         }
         val sort = when (sortDirection) {

@@ -352,7 +352,7 @@ class UserMediaServiceTest {
                 UserCollectionStatus.COMPLETED,
                 null,
                 null,
-                UserMediaSortBy.ADDED_DATE,
+                UserMediaSortBy.CREATED_AT,
                 SortDirection.DESC
             )
         } returns emptyList()
@@ -365,7 +365,7 @@ class UserMediaServiceTest {
                 UserCollectionStatus.COMPLETED,
                 null,
                 null,
-                UserMediaSortBy.ADDED_DATE,
+                UserMediaSortBy.CREATED_AT,
                 SortDirection.DESC
             )
         }
@@ -374,26 +374,26 @@ class UserMediaServiceTest {
     @Test
     fun `filter by favourite`() {
         every {
-            repository.findAllByUser("u", null, true, null, UserMediaSortBy.ADDED_DATE, SortDirection.DESC)
+            repository.findAllByUser("u", null, true, null, UserMediaSortBy.CREATED_AT, SortDirection.DESC)
         } returns emptyList()
 
         service.getAllMediaItemsByUserId("u", favourite = true)
 
         verify(exactly = 1) {
-            repository.findAllByUser("u", null, true, null, UserMediaSortBy.ADDED_DATE, SortDirection.DESC)
+            repository.findAllByUser("u", null, true, null, UserMediaSortBy.CREATED_AT, SortDirection.DESC)
         }
     }
 
     @Test
     fun `filter by folderId`() {
         every {
-            repository.findAllByUser("u", null, null, "folder-1", UserMediaSortBy.ADDED_DATE, SortDirection.DESC)
+            repository.findAllByUser("u", null, null, "folder-1", UserMediaSortBy.CREATED_AT, SortDirection.DESC)
         } returns emptyList()
 
         service.getAllMediaItemsByUserId("u", folderId = "folder-1")
 
         verify(exactly = 1) {
-            repository.findAllByUser("u", null, null, "folder-1", UserMediaSortBy.ADDED_DATE, SortDirection.DESC)
+            repository.findAllByUser("u", null, null, "folder-1", UserMediaSortBy.CREATED_AT, SortDirection.DESC)
         }
     }
 
@@ -404,7 +404,7 @@ class UserMediaServiceTest {
             UserMediaItem(userId = "u", mediaId = "m2")
         )
         every {
-            repository.findAllByUser("u", null, null, null, UserMediaSortBy.ADDED_DATE, SortDirection.DESC)
+            repository.findAllByUser("u", null, null, null, UserMediaSortBy.CREATED_AT, SortDirection.DESC)
         } returns items
         every { mediaCatalogService.findByIds(listOf("m1", "m2")) } returns listOf(
             MediaItem(id = "m1", title = "A", mediaType = MediaType.MOVIE, mediaStatus = MediaStatus.FINISHED),

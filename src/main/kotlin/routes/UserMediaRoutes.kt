@@ -57,7 +57,7 @@ fun Application.UserMediaRouting(
                     }
                     val folderId = call.parameters["folderId"]
                     val mediaType = call.parameters["mediaType"]?.let { parseMediaType(it) }
-                    val sortBy = call.parameters["sortBy"]?.let { parseSortBy(it) } ?: UserMediaSortBy.ADDED_DATE
+                    val sortBy = call.parameters["sortBy"]?.let { parseSortBy(it) } ?: UserMediaSortBy.CREATED_AT
                     val sortDirection = call.parameters["sortDir"]?.let { parseSortDirection(it) } ?: SortDirection.DESC
                     val items = userMediaService
                         .getAllMediaItemsByUserId(
@@ -144,7 +144,7 @@ fun Application.UserMediaRouting(
                     }
                     val folderId = call.parameters["folderId"]
                     val mediaType = call.parameters["mediaType"]?.let { parseMediaType(it) }
-                    val sortBy = call.parameters["sortBy"]?.let { parseSortBy(it) } ?: UserMediaSortBy.ADDED_DATE
+                    val sortBy = call.parameters["sortBy"]?.let { parseSortBy(it) } ?: UserMediaSortBy.CREATED_AT
                     val sortDirection = call.parameters["sortDir"]?.let { parseSortDirection(it) } ?: SortDirection.DESC
                     val items = userMediaService
                         .getAllMediaItemsByUserId(
@@ -217,24 +217,18 @@ private fun parseCollectionStatus(value: String): UserCollectionStatus {
 }
 
 private fun parseMediaType(value: String): MediaType {
-    val parsed = try {
+    return try {
         MediaType.valueOf(value.uppercase())
     } catch (_: IllegalArgumentException) {
         throw BadRequestException("Unknown mediaType: $value")
     }
-
-    if (parsed == MediaType.BOOK) {
-        throw BadRequestException("mediaType BOOK is not supported")
-    }
-
-    return parsed
 }
 
 private fun parseSortBy(value: String): UserMediaSortBy {
     val normalized = value.trim().lowercase()
     return when (normalized) {
         "added_date", "addeddate", "byaddeddate", "created_at", "createdat", "date", "date_added", "bydate" ->
-            UserMediaSortBy.ADDED_DATE
+            UserMediaSortBy.CREATED_AT
         "title", "alphabet", "alphabetical", "byalphabet", "name" ->
             UserMediaSortBy.TITLE
         else -> throw BadRequestException("Unknown sortBy: $value")

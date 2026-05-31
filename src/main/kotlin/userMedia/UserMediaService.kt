@@ -29,7 +29,7 @@ class UserMediaService(
         favourite: Boolean? = null,
         folderId: String? = null,
         mediaType: MediaType? = null,
-        sortBy: UserMediaSortBy = UserMediaSortBy.ADDED_DATE,
+        sortBy: UserMediaSortBy = UserMediaSortBy.CREATED_AT,
         sortDirection: SortDirection = SortDirection.DESC
     ): List<UserMediaItem> {
         val items = userMediaRepository.findAllByUser(
