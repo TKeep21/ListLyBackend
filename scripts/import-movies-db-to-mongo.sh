@@ -2,11 +2,11 @@
 
 set -euo pipefail
 
-CSV_FILE="${1:-input/movies_metadata.csv}"
-OUTPUT_FILE="${2:-build/import/global_media_items.ndjson}"
-LIMIT="${3:-0}"
+CSV_FILE="${1:-input/movies_DB.csv}"
+OUTPUT_FILE="${2:-build/import/movies_db_media_items.ndjson}"
+LIMIT="${3:-5000}"
 
-python3 scripts/tmdb_movies_to_media_ndjson.py \
+python3 scripts/movies_db_to_media_ndjson.py \
   --input "$CSV_FILE" \
   --output "$OUTPUT_FILE" \
   --limit "$LIMIT"

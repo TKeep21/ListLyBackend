@@ -9,6 +9,7 @@ import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
 import java.time.Duration
+import kotlin.math.min
 
 data class MeiliSearchSettings(
     val host: String,
@@ -43,56 +44,128 @@ class MeiliSearchClient(
         }
     }
 
-    fun ensureIndexExists() {
-        val indexUrl = "${settings.host}/indexes/${settings.index}"
-        val checkRequest = requestBuilder(indexUrl)
-            .GET()
-            .build()
+    fun ensureIndexExists(
+        maxAttempts: Int = 10,
+        retryDelay: Duration = Duration.ofMillis(400)
+    ): Boolean {
+        if (maxAttempts < 1) return false
 
-        val checkResponse = try {
-            http.send(checkRequest, HttpResponse.BodyHandlers.ofString())
-        } catch (e: Exception) {
-            log.warn("Failed to check Meili index existence: {}", settings.index, e)
-            return
-        }
+        repeat(maxAttempts) { attempt ->
+            val attemptNumber = attempt + 1
 
-        if (checkResponse.statusCode() in 200..299) {
-            return
-        }
+            if (!health()) {
+                log.warn(
+                    "Meili is not healthy yet. attempt={}/{} host={}",
+                    attemptNumber,
+                    maxAttempts,
+                    settings.host
+                )
+                waitBeforeRetry(attempt, retryDelay)
+                return@repeat
+            }
 
-        if (checkResponse.statusCode() != 404 || !checkResponse.body().contains("index_not_found", ignoreCase = true)) {
+            val indexResponse = send("${settings.host}/indexes/${settings.index}", "check index", "GET")
+            if (indexResponse == null) {
+                waitBeforeRetry(attempt, retryDelay)
+                return@repeat
+            }
+
+            if (indexResponse.statusCode() in 200..299) {
+                return true
+            }
+
+            val body = indexResponse.body()
+            if (indexResponse.statusCode() == 404 && body.contains("index_not_found", ignoreCase = true)) {
+                val createPayload = """{"uid":"${settings.index}","primaryKey":"id"}"""
+                val createResponse = send(
+                    "${settings.host}/indexes",
+                    "create index",
+                    "POST",
+                    createPayload
+                )
+
+                if (createResponse == null) {
+                    waitBeforeRetry(attempt, retryDelay)
+                    return@repeat
+                }
+
+                if (createResponse.statusCode() in 200..299) {
+                    log.info(
+                        "Meili index creation accepted. index={} status={} attempt={}/{}",
+                        settings.index,
+                        createResponse.statusCode(),
+                        attemptNumber,
+                        maxAttempts
+                    )
+                } else if (
+                    createResponse.statusCode() == 409 ||
+                    createResponse.body().contains("index_already_exists", ignoreCase = true)
+                ) {
+                    log.info("Meili index already exists. index={}", settings.index)
+                    return true
+                } else {
+                    log.warn(
+                        "Failed to create Meili index. index={} status={} body={} attempt={}/{}",
+                        settings.index,
+                        createResponse.statusCode(),
+                        createResponse.body(),
+                        attemptNumber,
+                        maxAttempts
+                    )
+                }
+
+                waitBeforeRetry(attempt, retryDelay)
+                return@repeat
+            }
+
             log.warn(
-                "Unexpected response while checking Meili index. index={}, status={}, body={}",
+                "Unexpected response while checking Meili index. index={} status={} body={} attempt={}/{}",
                 settings.index,
-                checkResponse.statusCode(),
-                checkResponse.body()
+                indexResponse.statusCode(),
+                body,
+                attemptNumber,
+                maxAttempts
             )
-            return
+            waitBeforeRetry(attempt, retryDelay)
         }
 
-        val payload = """{"uid":"${settings.index}","primaryKey":"id"}"""
-        val createRequest = requestBuilder("${settings.host}/indexes")
-            .POST(HttpRequest.BodyPublishers.ofString(payload))
-            .build()
+        log.warn(
+            "Failed to ensure Meili index after retries. index={} attempts={}",
+            settings.index,
+            maxAttempts
+        )
+        return false
+    }
 
-        val createResponse = try {
-            http.send(createRequest, HttpResponse.BodyHandlers.ofString())
+    private fun send(
+        url: String,
+        action: String,
+        method: String,
+        body: String? = null
+    ): HttpResponse<String>? {
+        val requestBuilder = requestBuilder(url)
+        val request = when (method) {
+            "GET" -> requestBuilder.GET().build()
+            "POST" -> requestBuilder.POST(HttpRequest.BodyPublishers.ofString(body.orEmpty())).build()
+            else -> error("Unsupported method: $method")
+        }
+
+        return try {
+            http.send(request, HttpResponse.BodyHandlers.ofString())
         } catch (e: Exception) {
-            log.warn("Failed to create Meili index: {}", settings.index, e)
+            log.warn("Failed to {} in MeiliSearch. url={}", action, url, e)
+            null
+        }
+    }
+
+    private fun waitBeforeRetry(attempt: Int, baseDelay: Duration) {
+        if (attempt <= 0) {
+            Thread.sleep(baseDelay.toMillis())
             return
         }
 
-        if (createResponse.statusCode() !in 200..299) {
-            log.warn(
-                "Failed to create Meili index. index={}, status={}, body={}",
-                settings.index,
-                createResponse.statusCode(),
-                createResponse.body()
-            )
-            return
-        }
-
-        log.info("Meili index ensured. index={}", settings.index)
+        val multiplier = min(attempt + 1, 5)
+        Thread.sleep(baseDelay.toMillis() * multiplier)
     }
 
     private fun requestBuilder(url: String): HttpRequest.Builder {
@@ -138,10 +211,14 @@ object MeiliSearchConfig {
 
 fun Application.configureSearch() {
     MeiliSearchConfig.init(this)
-    MeiliSearchConfig.client.ensureIndexExists()
+    val indexEnsured = MeiliSearchConfig.client.ensureIndexExists()
 
     if (MeiliSearchConfig.client.health()) {
-        log.info("Meilisearch is reachable at ${MeiliSearchConfig.settings.host}, index=${MeiliSearchConfig.settings.index}")
+        if (indexEnsured) {
+            log.info("Meilisearch is reachable at ${MeiliSearchConfig.settings.host}, index=${MeiliSearchConfig.settings.index} is ready")
+        } else {
+            log.warn("Meilisearch is reachable at ${MeiliSearchConfig.settings.host}, but index=${MeiliSearchConfig.settings.index} was not confirmed during startup")
+        }
     } else {
         log.warn("Meilisearch is not reachable at ${MeiliSearchConfig.settings.host}. Search endpoints will not work until it is available.")
     }

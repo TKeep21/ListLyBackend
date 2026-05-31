@@ -18,6 +18,10 @@ out/
 # Kotlin/Java
 *.class
 
+# Python
+__pycache__/
+*.pyc
+
 # Local env
 local.properties
 .env

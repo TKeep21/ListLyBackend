@@ -7,7 +7,6 @@ import com.example.media.Catalog.dto.model.MediaStatus
 import com.example.search.exceptions.InvalidSearchRequestException
 import com.example.search.exceptions.MeiliClientException
 import com.example.search.exceptions.SearchRequestFailedException
-import com.example.search.exceptions.SearchUnavailableException
 import com.example.search.repository.SearchReadRepository
 import com.example.search.service.MeiliMediaSearchServiceImpl
 import io.mockk.every
@@ -56,12 +55,25 @@ class MeiliMediaSearchServiceImplTest {
     }
 
     @Test
-    fun `search maps meili exception to SearchUnavailableException`() {
-        every { repository.searchIds("matrix", 10, 0) } throws MeiliClientException("boom")
+    fun `search normalizes control characters before repository call`() {
+        every { repository.searchIds("matrix reloaded", 12, 0) } returns emptyList()
+        every { mediaCatalogService.searchByTitleContains("matrix reloaded", 12, 0) } returns emptyList()
 
-        assertFailsWith<SearchUnavailableException> {
-            service.search("matrix", limit = 10, offset = 0)
-        }
+        service.search(" \tmatrix\nreloaded\u0000 ", limit = 12, offset = 0)
+
+        verify(exactly = 1) { repository.searchIds("matrix reloaded", 12, 0) }
+        verify(exactly = 1) { mediaCatalogService.searchByTitleContains("matrix reloaded", 12, 0) }
+    }
+
+    @Test
+    fun `search falls back to Mongo when meili exception happens`() {
+        every { repository.searchIds("matrix", 10, 0) } throws MeiliClientException("boom")
+        val fallback = listOf(mediaItem("mongo-1"))
+        every { mediaCatalogService.searchByTitleContains("matrix", 10, 0) } returns fallback
+
+        val result = service.search("matrix", limit = 10, offset = 0)
+
+        assertEquals(fallback, result)
     }
 
     @Test
@@ -74,6 +86,32 @@ class MeiliMediaSearchServiceImplTest {
         val result = service.search("matrix", limit = 10, offset = 0)
 
         assertEquals(emptyList(), result)
+    }
+
+    @Test
+    fun `search maps meili bad request to InvalidSearchRequestException`() {
+        every { repository.searchIds("matrix", 10, 0) } throws SearchRequestFailedException(
+            statusCode = 400,
+            responseBody = """{"message":"invalid search query"}"""
+        )
+
+        assertFailsWith<InvalidSearchRequestException> {
+            service.search("matrix", limit = 10, offset = 0)
+        }
+    }
+
+    @Test
+    fun `search falls back to Mongo on meili auth error`() {
+        every { repository.searchIds("matrix", 10, 0) } throws SearchRequestFailedException(
+            statusCode = 401,
+            responseBody = """{"message":"missing authorization header"}"""
+        )
+        val fallback = listOf(mediaItem("mongo-2"))
+        every { mediaCatalogService.searchByTitleContains("matrix", 10, 0) } returns fallback
+
+        val result = service.search("matrix", limit = 10, offset = 0)
+
+        assertEquals(fallback, result)
     }
 
     @Test

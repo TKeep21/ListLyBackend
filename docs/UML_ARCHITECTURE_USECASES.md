@@ -2,6 +2,8 @@
 
 Этот документ собран по актуальному коду backend и подходит для вставки в проектную документацию.
 
+Для помодульной версии (каждая диаграмма/схема в отдельном файле) см. `docs/uml/README.md`.
+
 ## 1) UML Flow (основной runtime-поток запроса)
 
 ```mermaid
@@ -41,8 +43,8 @@ sequenceDiagram
 ```mermaid
 flowchart LR
     Client[Mobile App / API Client] --> App[Ktor Application]
-    App --> Pipeline[Ktor Pipeline\nRouting + Authentication + Plugins]
-    Pipeline --> Routes[Route Handlers\nAuth, GlobalMedia, UserMedia, UserFolder, Search]
+    App --> Pipeline[Ktor Pipeline: Routing + Authentication + Plugins]
+    Pipeline --> Routes[Route Handlers: Auth, GlobalMedia, UserMedia, UserFolder, Search]
 
     Routes --> AuthService[AuthService]
     Routes --> MediaService[MediaCatalogService]
@@ -91,8 +93,8 @@ flowchart LR
     BrowseCatalog([Browse Global Catalog])
     SearchMedia([Search Media])
 
-    ManageOwnMedia([Manage Own User Media\ncreate/update/delete/status/favourite/folders])
-    ManageOwnFolders([Manage Own Folders\ncreate/rename/delete])
+    ManageOwnMedia([Manage Own User Media create/update/delete/status/favourite/folders])
+    ManageOwnFolders([Manage Own Folders create/rename/delete])
 
     CreateGlobal([Create Global Media Item])
     UpdateGlobal([Update Global Media Item])
@@ -147,11 +149,10 @@ MongoDB используется как document-oriented хранилище; с
 - `userId` -> logical reference to `users._id`
 - `name`
 
-## 5) п Indexes
+## 5)Indexes
 
 `users`
-- unique(`login`)  
-  если используется email-идентификатор: unique(`email`)
+- unique(`login`)
 
 `user_media`
 - unique compound index (`userId`, `mediaId`)

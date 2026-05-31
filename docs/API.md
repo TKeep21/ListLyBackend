@@ -1,6 +1,7 @@
 # Listly Backend API (Actual)
 
-Base URL (dev): `http://localhost:8080`
+Base URL (prod VM): `http://158.160.251.150:8080`
+Base URL (local dev): `http://localhost:8080`
 
 ## Auth model for UI
 
@@ -22,6 +23,7 @@ Authorization: Bearer eyJhbGciOi...
 |---|---|---|
 | `GET /media/*` | yes | yes |
 | `GET /media/search` | yes | yes |
+| `GET /media/discover` | yes | yes |
 | `POST /media` | no | yes |
 | `PATCH /media/admin/{mediaId}` | no | yes |
 | `DELETE /media/{mediaId}` | no | yes |
@@ -101,7 +103,7 @@ Entity returned by API:
 ```
 
 Enums:
-- `mediaType`: `MOVIE | BOOK | SERIES | ANIME | GAME`
+- `mediaType`: `MOVIE | SERIES | ANIME | GAME`
 - `mediaStatus`: `FINISHED | ONGOING | ANNOUNCED`
 
 ### GET `/media/{mediaId}`
@@ -195,6 +197,27 @@ Errors:
 - `400 Bad Request` (invalid `limit`/`offset`)
 - `503 Service Unavailable` (search backend unavailable)
 
+### GET `/media/discover`
+Alias: `GET /mediaCatalog/discover`
+
+Purpose:
+- Return the initial page for the Search tab when query is empty.
+- Items are sorted by `createdAt` descending (newest first).
+
+Query params:
+- `limit` (optional, default `12`, allowed `1..50`)
+- `offset` (optional, default `0`, must be `>= 0`)
+
+Example:
+
+`GET /media/discover?limit=12&offset=0`
+
+Response `200 OK`:
+- `MediaItem[]`
+
+Errors:
+- `400 Bad Request` (invalid `limit`/`offset`)
+
 ## 4) Admin reindex (search)
 
 ### POST `/media/admin/reindex` (ADMIN only)
@@ -278,6 +301,16 @@ Optional query params:
 - `status` (`PLANNED|IN_PROGRESS|COMPLETED|DROPPED`)
 - `favourite` (`true|false`)
 - `folderId` (string)
+- `mediaType` (`MOVIE|SERIES|ANIME|GAME`)
+- `sortBy` (`createdAt|title`)
+- `sortDirection` (`asc|desc`, default `desc`)
+
+Examples:
+
+```http
+GET /user-media?mediaType=MOVIE&folderId=folder1&sortBy=title&sortDirection=asc
+GET /user-media?sortBy=createdAt&sortDirection=desc
+```
 
 Response:
 - `200 OK` + `UserMediaResponse[]`

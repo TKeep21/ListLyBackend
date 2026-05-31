@@ -116,6 +116,59 @@ class GlobalMediaRoutesTest {
     }
 
     @Test
+    fun `GET discover returns 200 with default pagination`() = testApplication {
+        val service = mockk<MediaCatalogService>()
+        every { service.discover(12, 0) } returns listOf(mediaItem(id = "m1", title = "Newest"))
+
+        application {
+            configureSerialization()
+            configureStatusPages()
+            installTestAuth("USER")
+            GlobalMediaRouting(service, TestRoleProvider())
+        }
+
+        val response = client.get("/media/discover")
+
+        assertEquals(HttpStatusCode.OK, response.status)
+        verify(exactly = 1) { service.discover(12, 0) }
+    }
+
+    @Test
+    fun `GET discover returns 200 with provided pagination`() = testApplication {
+        val service = mockk<MediaCatalogService>()
+        every { service.discover(20, 40) } returns emptyList()
+
+        application {
+            configureSerialization()
+            configureStatusPages()
+            installTestAuth("USER")
+            GlobalMediaRouting(service, TestRoleProvider())
+        }
+
+        val response = client.get("/media/discover?limit=20&offset=40")
+
+        assertEquals(HttpStatusCode.OK, response.status)
+        verify(exactly = 1) { service.discover(20, 40) }
+    }
+
+    @Test
+    fun `GET discover returns 400 when pagination is not integer`() = testApplication {
+        val service = mockk<MediaCatalogService>(relaxed = true)
+
+        application {
+            configureSerialization()
+            configureStatusPages()
+            installTestAuth("USER")
+            GlobalMediaRouting(service, TestRoleProvider())
+        }
+
+        val response = client.get("/media/discover?limit=abc")
+
+        assertEquals(HttpStatusCode.BadRequest, response.status)
+        verify(exactly = 0) { service.discover(any(), any()) }
+    }
+
+    @Test
     fun `POST create returns 201`() = testApplication {
         val service = mockk<MediaCatalogService>()
         val request = CreateMediaRequest(

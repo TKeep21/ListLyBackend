@@ -12,6 +12,7 @@ import com.example.security.requireAdmin
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.Application
 import io.ktor.server.auth.authenticate
+import io.ktor.server.plugins.BadRequestException
 import io.ktor.server.request.receive
 import io.ktor.server.response.respond
 import io.ktor.server.routing.Route
@@ -37,6 +38,13 @@ fun Application.GlobalMediaRouting(
         get("/items/{title}") {
             val title = call.parameters["title"] ?: return@get call.respond(HttpStatusCode.BadRequest)
             val items = mediaService.findAllByTitle(title)
+            call.respond(items)
+        }
+
+        get("/discover") {
+            val limit = call.request.queryParameters.parseIntParam("limit", 12)
+            val offset = call.request.queryParameters.parseIntParam("offset", 0)
+            val items = mediaService.discover(limit = limit, offset = offset)
             call.respond(items)
         }
 
@@ -82,6 +90,11 @@ fun Application.GlobalMediaRouting(
             registerCatalogEndpoints()
         }
     }
+}
+
+private fun io.ktor.http.Parameters.parseIntParam(name: String, default: Int): Int {
+    val raw = this[name] ?: return default
+    return raw.toIntOrNull() ?: throw BadRequestException("$name must be an integer")
 }
 
 //prod-wiring для global

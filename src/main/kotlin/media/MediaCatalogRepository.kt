@@ -5,12 +5,14 @@ import com.example.media.dto.UpdateMediaRequest
 import com.example.media.model.MediaItem
 import com.mongodb.client.model.Filters
 import com.mongodb.client.model.Updates
+import com.mongodb.client.model.Sorts
 import org.bson.types.ObjectId
 import org.litote.kmongo.eq
 import org.litote.kmongo.findOne
 import org.litote.kmongo.`in`
 import org.litote.kmongo.limit
 import org.litote.kmongo.skip
+import java.util.regex.Pattern
 
 class MediaCatalogRepository {
 
@@ -33,6 +35,25 @@ class MediaCatalogRepository {
     fun findPage(limit: Int, offset: Int): List<MediaItem> {
         if (limit <= 0 || offset < 0) return emptyList()
         return collection.find()
+            .skip(offset)
+            .limit(limit)
+            .toList()
+    }
+
+    fun findNewestPage(limit: Int, offset: Int): List<MediaItem> {
+        if (limit <= 0 || offset < 0) return emptyList()
+        return collection.find()
+            .sort(Sorts.descending("createdAt"))
+            .skip(offset)
+            .limit(limit)
+            .toList()
+    }
+
+    fun findByTitleContaining(query: String, limit: Int, offset: Int): List<MediaItem> {
+        if (query.isBlank() || limit <= 0 || offset < 0) return emptyList()
+
+        val escaped = Pattern.quote(query.trim())
+        return collection.find(Filters.regex("title", escaped, "i"))
             .skip(offset)
             .limit(limit)
             .toList()

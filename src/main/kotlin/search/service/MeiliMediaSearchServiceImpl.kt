@@ -19,7 +19,7 @@ class MeiliMediaSearchServiceImpl(
         limit: Int,
         offset: Int
     ): List<MediaItem> {
-        val normalizedQuery = query.trim()
+        val normalizedQuery = normalizeQuery(query)
 
         if (normalizedQuery.isEmpty()) {
             return emptyList()
@@ -37,18 +37,44 @@ class MeiliMediaSearchServiceImpl(
 
         return try {
             val ids = repository.searchIds(safeQuery,limit,offset)
+            if (ids.isEmpty()) {
+                return mediaCatalogService.searchByTitleContains(safeQuery, limit, offset)
+            }
             val items = mediaCatalogService.findByIds(ids)
-            if (items.isEmpty()) return emptyList()
+            if (items.isEmpty()) {
+                return mediaCatalogService.searchByTitleContains(safeQuery, limit, offset)
+            }
             items
         } catch (e: SearchRequestFailedException) {
             if (e.statusCode == 404 && e.responseBody.contains("index_not_found", ignoreCase = true)) {
                 log.info("Search index not found for query='{}'. Returning empty result.", safeQuery)
                 emptyList()
+            } else if (e.statusCode == 400) {
+                log.info(
+                    "Meili rejected search request. queryLength={}, responseBody={}",
+                    safeQuery.length,
+                    e.responseBody
+                )
+                throw InvalidSearchRequestException("Invalid search query")
             } else {
-                throw SearchUnavailableException("Search is unavailable", e)
+                log.warn(
+                    "Meili search request failed. status={}, queryLength={}",
+                    e.statusCode,
+                    safeQuery.length,
+                    e
+                )
+                mediaCatalogService.searchByTitleContains(safeQuery, limit, offset)
             }
         } catch (e: MeiliClientException) {
-            throw SearchUnavailableException("Search is unavailable", e)
+            log.warn("Meili client error. Falling back to Mongo title search", e)
+            mediaCatalogService.searchByTitleContains(safeQuery, limit, offset)
         }
     }
+
+    private fun normalizeQuery(query: String): String =
+        query
+            .map { if (it.isISOControl()) ' ' else it }
+            .joinToString("")
+            .trim()
+            .replace(Regex("\\s+"), " ")
 }

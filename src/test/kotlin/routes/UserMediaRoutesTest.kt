@@ -3,7 +3,11 @@ package routes
 import com.example.UserMedia.UserMediaService
 import com.example.UserMedia.exceptions.InvalidUserMediaRequestException
 import com.example.UserMedia.exceptions.UserMediaNotFoundException
+import com.example.UserMedia.model.SortDirection
+import com.example.UserMedia.model.UserCollectionStatus
+import com.example.UserMedia.model.UserMediaSortBy
 import com.example.configureSerialization
+import com.example.media.model.MediaType
 import com.example.plugins.configureStatusPages
 import com.example.routes.UserMediaRouting
 import com.example.security.TestUserIdProvider
@@ -141,6 +145,81 @@ class UserMediaRoutesTest {
         verify(exactly = 0) {service.getById(any(),any())}
     }
 
+    @Test
+    fun `GET collection passes filter and sort query params to service`() = testApplication {
+        val service = mockk<UserMediaService>()
+        val userId = "9492"
+
+        every {
+            service.getAllMediaItemsByUserId(
+                userId = userId,
+                status = UserCollectionStatus.COMPLETED,
+                favourite = true,
+                folderId = "folder-1",
+                mediaType = MediaType.MOVIE,
+                sortBy = UserMediaSortBy.TITLE,
+                sortDirection = SortDirection.ASC
+            )
+        } returns emptyList()
+
+        application {
+            configureSerialization()
+            configureStatusPages()
+
+            install(Authentication) {
+                bearer("auth-jwt") {
+                    authenticate { _ -> TestUserPrincipal(userId) }
+                }
+            }
+            UserMediaRouting(service, TestUserIdProvider())
+        }
+
+        val response = client.get(
+            "/user-media?status=completed&favourite=true&folderId=folder-1&mediaType=movie&sortBy=title&sortDirection=asc"
+        ) {
+            header(HttpHeaders.Authorization, "Bearer anything")
+        }
+
+        assertEquals(HttpStatusCode.OK, response.status)
+        verify(exactly = 1) {
+            service.getAllMediaItemsByUserId(
+                userId,
+                UserCollectionStatus.COMPLETED,
+                true,
+                "folder-1",
+                MediaType.MOVIE,
+                UserMediaSortBy.TITLE,
+                SortDirection.ASC
+            )
+        }
+    }
+
+    @Test
+    fun `GET collection returns 400 for unknown media type`() = testApplication {
+        val service = mockk<UserMediaService>(relaxed = true)
+        val userId = "9492"
+
+        application {
+            configureSerialization()
+            configureStatusPages()
+
+            install(Authentication) {
+                bearer("auth-jwt") {
+                    authenticate { _ -> TestUserPrincipal(userId) }
+                }
+            }
+            UserMediaRouting(service, TestUserIdProvider())
+        }
+
+        val response = client.get("/user-media?mediaType=unknown") {
+            header(HttpHeaders.Authorization, "Bearer anything")
+        }
+
+        assertEquals(HttpStatusCode.BadRequest, response.status)
+        verify(exactly = 0) {
+            service.getAllMediaItemsByUserId(any(), any(), any(), any(), any(), any(), any())
+        }
+    }
 
 
 

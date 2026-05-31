@@ -1,6 +1,7 @@
 # Listly Backend API v1
 
-Base URL (dev): `http://localhost:8080`
+Base URL (prod VM): `http://158.160.251.150:8080`
+Base URL (local dev): `http://localhost:8080`
 
 ## Auth
 
@@ -54,7 +55,7 @@ Entity `MediaItem` (global, shared by all users):
 ```
 
 Enums:
-- `type`: `MOVIE | BOOK | SERIES | ANIME | GAME`
+- `type`: `MOVIE | SERIES | ANIME | GAME`
 - `mediaStatus`: `FINISHED | ONGOING | PLANNED`
 
 ### GET /media
