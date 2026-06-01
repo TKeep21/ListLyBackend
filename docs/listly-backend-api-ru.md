@@ -224,7 +224,7 @@ Response:
 
 Основные маршруты:
 - `/user-media`
-- Alias для выбранных действий: `/api/user-media`
+- Alias: `/api/user-media`
 
 Сущность:
 
@@ -246,6 +246,8 @@ Enum `collectionStatus`:
 - `PLANNED | IN_PROGRESS | COMPLETED | DROPPED`
 
 ### POST `/user-media`
+
+Alias: `POST /api/user-media`
 
 Request:
 

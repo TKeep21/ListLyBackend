@@ -53,8 +53,7 @@ docker compose exec -T mongo mongosh \
 const login = '$LOGIN';
 const count = Number('$COUNT');
 const dbx = db.getSiblingDB('ListlyDB');
-const userColName = dbx.getCollectionNames().includes('user') ? 'user' : 'users';
-const userCol = dbx.getCollection(userColName);
+const userCol = dbx.getCollection('users');
 const user = userCol.findOne({ login: login });
 
 if (!user) {

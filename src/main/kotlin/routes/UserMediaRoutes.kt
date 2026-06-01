@@ -133,6 +133,14 @@ fun Application.UserMediaRouting(
             }
 
             route("/api/user-media") {
+                post {
+                    val userId = call.requireUserId(userIdProvider) ?: return@post
+
+                    val request = call.receive<CreateUserMediaRequest>()
+                    userMediaService.create(userId, request)
+                    call.respond(HttpStatusCode.Created)
+                }
+
                 get {
                     val userId = call.requireUserId(userIdProvider) ?: return@get
                     val status = call.parameters["status"]?.let {
